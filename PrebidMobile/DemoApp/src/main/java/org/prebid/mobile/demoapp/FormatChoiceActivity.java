@@ -40,6 +40,12 @@ public class FormatChoiceActivity extends AppCompatActivity {
                         startActivity(intent);
                     }
                 }));
+                {
+                    Intent intent2 = new Intent(FormatChoiceActivity.this, DemoActivity.class);
+                    intent2.putExtra(Constants.ADSERVER, "dfp");
+                    intent2.putExtra(Constants.ADFORMAT, "banner");
+                    startActivity(intent2);
+                }
             } else if ("mopub".equals(adServerName)) {
                 rootView.addView(getTextView("Show Banner Example", new View.OnClickListener() {
                     @Override

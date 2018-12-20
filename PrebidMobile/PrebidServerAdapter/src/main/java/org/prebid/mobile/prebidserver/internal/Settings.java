@@ -27,6 +27,12 @@ public class Settings {
     public static final String RUBICON_REQUEST_URL_NON_SECURE = "http://prebid-server.rubiconproject.com/openrtb2/auction";
     public static final String RUBICON_REQUEST_URL_SECURE = "https://prebid-server.rubiconproject.com/openrtb2/auction";
 
+    public static final String ADSOLUTIONS_REQUEST_URL_NON_SECURE = "http://tagmans3.adsolutions.com/pbs/v0/openrtb2/auction";
+    public static final String ADSOLUTIONS_REQUEST_URL_SECURE = "https://tagmans3.adsolutions.com/pbs/v0/openrtb2/auction";
+
+    public static final String ADSOLUTIONS_DEV_REQUEST_URL_NON_SECURE = "http://192.168.0.45:10800/openrtb2/auction";
+    public static final String ADSOLUTIONS_DEV_REQUEST_URL_SECURE = "https://192.168.0.45:10800/openrtb2/auction";
+
     public static int connectionTimeOutMillis = 500;
     // request keys
     public static final String REQUEST_USER = "user";

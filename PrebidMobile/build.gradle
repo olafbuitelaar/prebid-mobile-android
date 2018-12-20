@@ -6,9 +6,9 @@ ext {
     prebidVersionName = "0.4"
     prebidVersionCode = 1
     minSDKVersion = 16
-    targetSDKVersion = 25
-    compileSdkVersion = 25
-    buildToolsVersion = "26.0.2"
+    targetSDKVersion = 28
+    compileSdkVersion = 28
+    buildToolsVersion = "28.0.2"
 }
 
 buildscript {
@@ -18,7 +18,7 @@ buildscript {
     }
 
     dependencies {
-        classpath 'com.android.tools.build:gradle:3.0.1'
+        classpath 'com.android.tools.build:gradle:3.1.4'
 
         // NOTE: Do not place your application dependencies here; they belong
         // in the individual module build.gradle files

@@ -40,27 +40,36 @@ public class MainActivity extends AppCompatActivity {
                 startActivity(intent);
             }
         });
+
+        switchAdServer(Prebid.AdServer.DFP);
+        Intent intent = new Intent(MainActivity.this, FormatChoiceActivity.class);
+        intent.putExtra(Constants.ADSERVER, "dfp");
+        startActivity(intent);
     }
 
     private void switchAdServer(Prebid.AdServer adServer) {
         try {
             Field field = Prebid.class.getDeclaredField("adServer");
-            field.setAccessible(true);
-            field.set(null, adServer);
-            Field useLocalCache = Prebid.class.getDeclaredField("useLocalCache");
-            useLocalCache.setAccessible(true);
-            switch (adServer) {
-                case DFP:
-                    useLocalCache.set(null, true);
-                    break;
-                case MOPUB:
-                    useLocalCache.set(null, false);
-                    break;
+            if(Prebid.getAdServer() != adServer) {
+                field.setAccessible(true);
+                field.set(null, adServer);
+                Field useLocalCache = Prebid.class.getDeclaredField("useLocalCache");
+                useLocalCache.setAccessible(true);
+                switch (adServer) {
+                    case DFP:
+                        useLocalCache.set(null, true);
+                        break;
+                    case MOPUB:
+                        useLocalCache.set(null, false);
+                        break;
+                }
+                // refreshBids
+                Method refreshBids = BidManager.class.getDeclaredMethod("refreshBids", Context.class);
+                refreshBids.setAccessible(true);
+                refreshBids.invoke(null, MainActivity.this);
+            }else{
+
             }
-            // refreshBids
-            Method refreshBids = BidManager.class.getDeclaredMethod("refreshBids", Context.class);
-            refreshBids.setAccessible(true);
-            refreshBids.invoke(null, MainActivity.this);
         } catch (Exception e) {
             e.printStackTrace();
         }

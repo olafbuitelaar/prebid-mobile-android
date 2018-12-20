@@ -36,3 +36,13 @@ dependencies {
     compile project(":PrebidMobileCore")
     compile project(":PrebidServerAdapter")
 }
+
+repositories {
+    google()
+}
+
+buildscript {
+    repositories {
+        google()
+    }
+}

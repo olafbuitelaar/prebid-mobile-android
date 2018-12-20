@@ -80,6 +80,9 @@ public class BidManager {
             handler.postDelayed(expireBids, periodToCheckExpiration);
         }
     }
+    static Set<AdUnit> getAdUnits(){
+        return adUnits;
+    }
     //endregion
 
     //region Auction Logic Handling
@@ -117,6 +120,14 @@ public class BidManager {
             adUnits.add(adUnit);
             requestBidsForAdUnits(context, adUnits);
         }
+    }
+
+    public static ArrayList<BidResponse> getBidsForAdUnit(String adUnitCode) {
+        if(bidMap.containsKey(adUnitCode)){
+            return bidMap.get(adUnitCode);
+        }
+        return new ArrayList<BidResponse>();
+        //return  null;
     }
 
     //endregion
@@ -219,8 +230,9 @@ public class BidManager {
         ArrayList<BidResponse> bidResponses = null;
         if (isBidReady(adUnitCode)) {
             bidResponses = getWinningBids(adUnitCode);
+        }else {
+            startNewAuction(context, adUnit);//TODO: make this logic way more solid! shouldn't start a new auction when an auction for this adunit is already running! for example.
         }
-        startNewAuction(context, adUnit);
         if (bidResponses != null) {
             ArrayList<Pair<String, String>> keywordsPairs = new ArrayList<Pair<String, String>>();
             for (BidResponse bid : bidResponses) {
@@ -228,6 +240,7 @@ public class BidManager {
                     keywordsPairs.add(keywords);
                 }
             }
+            //bidResponses.sort();
             return keywordsPairs;
         }
         return null;

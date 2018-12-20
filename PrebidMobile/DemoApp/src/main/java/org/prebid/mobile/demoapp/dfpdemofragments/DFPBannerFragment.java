@@ -11,13 +11,16 @@ import android.widget.Button;
 import android.widget.FrameLayout;
 
 import com.google.android.gms.ads.AdListener;
+import com.google.android.gms.ads.AdLoader;
 import com.google.android.gms.ads.AdSize;
+import com.google.android.gms.ads.doubleclick.AppEventListener;
 import com.google.android.gms.ads.doubleclick.PublisherAdRequest;
 import com.google.android.gms.ads.doubleclick.PublisherAdView;
 
 import org.prebid.mobile.core.LogUtil;
 import org.prebid.mobile.core.Prebid;
 import org.prebid.mobile.demoapp.Constants;
+import org.prebid.mobile.demoapp.LineItemEventListener;
 import org.prebid.mobile.demoapp.R;
 
 
@@ -33,9 +36,7 @@ public class DFPBannerFragment extends Fragment implements Prebid.OnAttachComple
         super.onCreateView(inflater, container, savedInstanceState);
         root = inflater.inflate(R.layout.fragment_banner, null);
 
-        setupBannerWithoutWait();
 
-        setupBannerWithWait(500);
 
         Button btnLoad = (Button) root.findViewById(R.id.loadBanner);
         btnLoad.setOnClickListener(new View.OnClickListener() {
@@ -72,9 +73,14 @@ public class DFPBannerFragment extends Fragment implements Prebid.OnAttachComple
             @Override
             public void onAdLoaded() {
                 super.onAdLoaded();
+
                 LogUtil.d("DPF-Banner", "onAdLoaded");
             }
         };
+
+        //setupBannerWithoutWait();
+
+        setupBannerWithWait(50000);
         
         return root;
     }
@@ -122,12 +128,36 @@ public class DFPBannerFragment extends Fragment implements Prebid.OnAttachComple
         adView2 = new PublisherAdView(getActivity());
         adView2.setAdUnitId(Constants.DFP_BANNER_ADUNIT_ID_300x250);
         adView2.setAdSizes(new AdSize(300, 250));
-        adView2.setAdListener(adListener);
+        //adView2.setAdListener(adListener);
+        adView2.setAdListener(new LineItemEventListener(adView2));
         adFrame.addView(adView2);
         //region PriceCheckForDFP API usage
         PublisherAdRequest.Builder builder = new PublisherAdRequest.Builder();
+
+
+        /*adView2.setAppEventListener(new AppEventListener() {
+            @Override
+            public void onAppEvent(String name, String data) {
+
+                // The DFP ad that this fragment loads contains JavaScript code that sends App
+                // Events to the host application. This AppEventListener receives those events,
+                // and sets the background of the fragment to match the data that comes in.
+                // The ad will send "red" when it loads, "blue" five seconds later, and "green"
+                // if the user taps the ad.
+
+                // This is just a demonstration, of course. Your apps can do much more interesting
+                // things with App Events.
+
+                if (name.equals("deliveryData")) {
+                    LogUtil.d("DPF-Banner", "onAppEvent" + name+":"+ data);
+                }
+            }
+        });*/
+
+
         PublisherAdRequest request = builder.build();
-        Prebid.attachBidsWhenReady(request, Constants.BANNER_300x250, this, waitTime, this.getActivity());
+
+        Prebid.attachBidsWhenReady(request, adView2, Constants.BANNER_300x250, this, waitTime, this.getActivity());
         //endregion
 
     }

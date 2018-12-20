@@ -21,11 +21,19 @@ import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Pair;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -44,6 +52,18 @@ public class Prebid {
     private static boolean useLocalCache = true;
     private static Host host = Host.APPNEXUS;
     private static AdServer adServer = AdServer.UNKNOWN;
+    private static Map<String, List<Object>> bidAdunitMap = new HashMap<String, List<Object>>();
+    private static Object appListener;
+
+    public static void markWinner(String adUnitCode, String creativeId) {
+        ArrayList<BidResponse> bids = BidManager.getBidsForAdUnit(adUnitCode);
+        for (BidResponse bid : bids) {
+            String crt = bid.getCreative();
+            if(bid.getCreative().equals(creativeId)){
+                bid.setWinner();
+            }
+        }
+    }
 
     public enum AdServer {
         DFP,
@@ -53,7 +73,9 @@ public class Prebid {
 
     public enum Host {
         APPNEXUS,
-        RUBICON
+        RUBICON,
+        ADSOLUTIONS,
+        ADSOLUTIONS_DEV
     }
 
     //region Public APIs
@@ -95,7 +117,7 @@ public class Prebid {
      * @param host      Host you're using for your app
      * @throws PrebidException
      */
-    public static void init(Context context, ArrayList<AdUnit> adUnits, String accountId, AdServer adServer, Host host) throws PrebidException {
+    public static void init(Context context, ArrayList<AdUnit> adUnits, String accountId, AdServer adServer, Host host, Object appListener) throws PrebidException {
         LogUtil.i("Initializing with a list of AdUnits");
         // validate context
         if (context == null) {
@@ -105,6 +127,7 @@ public class Prebid {
         if (TextUtils.isEmpty(accountId)) {
             throw new PrebidException(PrebidException.PrebidError.INVALID_ACCOUNT_ID);
         }
+        Prebid.appListener = appListener;
         Prebid.accountId = accountId;
         Prebid.adServer = adServer;
         if (AdServer.MOPUB.equals(Prebid.adServer)) {
@@ -141,7 +164,7 @@ public class Prebid {
             throw new PrebidException(PrebidException.PrebidError.UNABLE_TO_INITIALIZE_DEMAND_SOURCE);
         }
         // set up bid manager
-        BidManager.setBidsExpirationRunnable(context);
+        //BidManager.setBidsExpirationRunnable(context); //FOR NOW DON'T AUTO EXPIRE BIDS //TODO: improve!
         // set up cache manager
         CacheManager.init(context);
         // start ad requests
@@ -163,6 +186,52 @@ public class Prebid {
         }
     }
 
+    public static void mapBidToAdView(final Object adView, String adUnitCode){
+        AdUnitBidMap map = new AdUnitBidMap(adView, adUnitCode);
+        //Object listener = Class.forName("com.google.android.gms.ads.doubleclick.AppEventListener").newInstance();
+        //Class<?> listClass = listener.getClass();
+        Class<?> listClass = appListener.getClass();
+        Object newList = null;
+        try {
+            newList = listClass.newInstance();
+            Field fld = listClass.getField("adView");
+            fld.set(newList, adView);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+
+
+
+        callMethodOnObject2(adView, "setAppEventListener", newList);
+        if(!bidAdunitMap.containsKey(adUnitCode)){
+            bidAdunitMap.put(adUnitCode, new ArrayList<Object>());
+            bidAdunitMap.get(adUnitCode).add(map);
+        }else if(!checkIfAdViewExists(bidAdunitMap.get(adUnitCode), adView)){
+            bidAdunitMap.get(adUnitCode).add(map);
+        }
+    }
+
+    private static boolean checkIfAdViewExists(List<Object> maps, Object adView){
+        for (Object map: maps) {
+            if(((AdUnitBidMap)map).adView == adView){
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static AdUnitBidMap getAdunitMapByAdView(Object adView){
+        for ( Map.Entry<String, List<Object>> map : Prebid.bidAdunitMap.entrySet()) {
+            for (Object view : map.getValue()) {
+                if(((AdUnitBidMap)view).adView == adView){
+                    return (AdUnitBidMap)view;
+                }
+            }
+        }
+        return  null;
+    }
+
+
     public static void detachUsedBid(Object adObj) {
         if (adObj != null) {
             if (adObj.getClass() == getClassFromString(MOPUB_ADVIEW_CLASS)) {
@@ -174,6 +243,18 @@ public class Prebid {
     }
 
     public static void attachBidsWhenReady(final Object adObject, String adUnitCode, final OnAttachCompleteListener listener, int timeOut, final Context context) {
+        BidManager.getKeywordsWhenReadyForAdUnit(adUnitCode, timeOut, new BidManager.BidReadyListener() {
+            @Override
+            public void onBidReady(String adUnitCode) {
+                attachBids(adObject, adUnitCode, context);
+                listener.onAttachComplete(adObject);
+            }
+        });
+    }
+
+    public static void attachBidsWhenReady(final Object adObject, final Object adView, String adUnitCode, final OnAttachCompleteListener listener, int timeOut, final Context context) {
+        mapBidToAdView(adView, adUnitCode);
+
         BidManager.getKeywordsWhenReadyForAdUnit(adUnitCode, timeOut, new BidManager.BidReadyListener() {
             @Override
             public void onBidReady(String adUnitCode) {
@@ -200,6 +281,26 @@ public class Prebid {
             Class<?>[] classes = new Class[len];
             for (int i = 0; i < len; i++) {
                 classes[i] = params[i].getClass();
+            }
+            Method method = object.getClass().getMethod(methodName, classes);
+            return method.invoke(object, params);
+        } catch (NullPointerException e) {
+            e.printStackTrace();
+        } catch (NoSuchMethodException e) {
+            e.printStackTrace();
+        } catch (InvocationTargetException e) {
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+    private static Object callMethodOnObject2(Object object, String methodName, Object... params) {
+        try {
+            int len = params.length;
+            Class<?>[] classes = new Class[len];
+            for (int i = 0; i < len; i++) {
+                classes[i] = params[i].getClass().getInterfaces()[0];
             }
             Method method = object.getClass().getMethod(methodName, classes);
             return method.invoke(object, params);
@@ -272,6 +373,7 @@ public class Prebid {
         Bundle bundle = (Bundle) callMethodOnObject(adRequestObj, "getCustomTargeting");
         if (bundle != null) {
             ArrayList<Pair<String, String>> prebidKeywords = BidManager.getKeywordsForAdUnit(adUnitCode, context);
+
             if (prebidKeywords != null && !prebidKeywords.isEmpty()) {
                 // retrieve keywords from mopub adview
                 for (Pair<String, String> keywordPair : prebidKeywords) {
@@ -313,8 +415,118 @@ public class Prebid {
      */
     public static void shouldLoadOverSecureConnection(boolean secureConnection) {
         // Only enables overrides for MoPub, DFP should always load over secured connection
-        if (Prebid.adServer.equals(AdServer.MOPUB)) {
+        //if (Prebid.adServer.equals(AdServer.MOPUB)) {
             Prebid.secureConnection = secureConnection;
+        //}
+    }
+
+    private static void trackStats(JSONObject stats){
+        String url = null;
+        switch (host){
+            case ADSOLUTIONS:
+                url = "https://tagmans3.adsolutions.com/log/";
+                break;
+            case ADSOLUTIONS_DEV:
+                url = "http://192.168.0.45P/log/";
+                break;
+
+
         }
+        int retryCnt = 0;
+        try{
+            if(url != null) {
+                new StatsTracker(url, stats).execute();
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+    public static void gatherStats(){
+        JSONObject statsDict = new JSONObject();
+        try {
+            statsDict.put("client", 0);
+            statsDict.put("screenWidth", 0);
+            statsDict.put("screenHeight", 0);
+            statsDict.put("viewWidth", 0);
+            statsDict.put("viewHeight", 0);
+            statsDict.put("language", "nl");
+            statsDict.put("host", "demoApp");
+            statsDict.put("page", "/home");
+            statsDict.put("proto", "https");
+            statsDict.put("timeToLoad", 0);
+            statsDict.put("timeToPlacement", 0);
+            statsDict.put("duration", 0);
+
+            statsDict.put("placements", gatherPlacements());
+
+
+            trackStats(statsDict);
+        }catch (JSONException e){
+
+        }
+
+
+    }
+    private  static JSONArray gatherPlacements() throws JSONException{
+        JSONArray placementDict = new JSONArray();
+        int cnt = 0;
+        for ( Map.Entry<String, List<Object>> map : Prebid.bidAdunitMap.entrySet()) {
+            for (Object placementObj : map.getValue()) {
+                AdUnitBidMap placement = (AdUnitBidMap) placementObj;
+                placementDict.put(gatherSizes(placement, cnt++));
+            }
+        }
+        return placementDict;
+    }
+    private static JSONObject gatherSizes(AdUnitBidMap placement, int cnt) throws JSONException{
+        JSONObject sizesDict = new JSONObject();
+        JSONArray sizeArr = new JSONArray();
+        sizeArr.put(gatherSize(placement));
+        sizesDict.put("sizes", sizeArr);
+
+        return sizesDict;
+    }
+    private static JSONObject gatherSize(AdUnitBidMap placement) throws JSONException{
+        JSONObject sizesDict = new JSONObject();
+        JSONObject prebidDict = new JSONObject();
+        JSONArray tiersList = new JSONArray();
+        JSONObject tierDict = new JSONObject();
+        JSONArray bidsList = new JSONArray();
+
+
+        sizesDict.put("id", 0);
+        sizesDict.put("isDefault", placement.isDefault);
+        sizesDict.put("viaAdserver", true);
+        sizesDict.put("active", true);
+        sizesDict.put("prebid", prebidDict);
+        prebidDict.put("tiers", tiersList);
+
+        tiersList.put(tierDict);
+
+        tierDict.put("id", 0);
+        tierDict.put("bids", bidsList);
+
+        ArrayList<BidResponse> bids = BidManager.getBidsForAdUnit(placement.adUnitCode);
+        for (BidResponse bid : bids) {
+            JSONObject jsonBid = gatherBid(bid);
+            bidsList.put(jsonBid);
+        }
+
+        return sizesDict;
+    }
+
+    private static JSONObject gatherBid(BidResponse bid) throws  JSONException{
+        JSONObject bidObj = new JSONObject();
+        bidObj.put("bidder",bid.getBidderCode());
+        bidObj.put( "won",  bid.getWinner());
+        bidObj.put("cpm", bid.getCpm());
+        bidObj.put("origCPM", null);
+        bidObj.put("time", bid.getResponseTime());
+        bidObj.put("size",  bid.getSize());
+        bidObj.put("status", bid.getStatusCode());//TODO:detect correct status //0= pending, 1= bid available, 2= no bid available, 3=bid time-out
+
+        //bidObj.put("bidderTier",null);
+        //bidObj.put("tierFloor", null);
+        return bidObj;
     }
 }

@@ -92,6 +92,14 @@ public class PrebidServerAdapter implements DemandAdapter, ServerConnector.Serve
                 host = (Prebid.isSecureConnection()) ? Settings.RUBICON_REQUEST_URL_SECURE :
                         Settings.RUBICON_REQUEST_URL_NON_SECURE;
                 break;
+            case ADSOLUTIONS:
+                host = (Prebid.isSecureConnection()) ? Settings.ADSOLUTIONS_REQUEST_URL_SECURE :
+                        Settings.ADSOLUTIONS_REQUEST_URL_NON_SECURE;
+                break;
+            case ADSOLUTIONS_DEV:
+                host = (Prebid.isSecureConnection()) ? Settings.ADSOLUTIONS_DEV_REQUEST_URL_SECURE :
+                        Settings.ADSOLUTIONS_DEV_REQUEST_URL_NON_SECURE;
+                break;
         }
         return host;
     }
@@ -117,6 +125,10 @@ public class PrebidServerAdapter implements DemandAdapter, ServerConnector.Serve
                         try {
                             JSONObject seat = seatbid.getJSONObject(i);
                             String bidderName = seat.getString("seat");
+                            int responseTime = 0;
+                            if(response.has("ext") && response.getJSONObject("ext").has("responsetimemillis") && response.getJSONObject("ext").getJSONObject("responsetimemillis").has(bidderName)){
+                                responseTime = response.getJSONObject("ext").getJSONObject("responsetimemillis").getInt(bidderName);
+                            }
                             JSONArray bids = seat.getJSONArray("bid");
                             if (bids != null && bids.length() > 0) {
                                 int bidLen = bids.length();
@@ -130,6 +142,8 @@ public class PrebidServerAdapter implements DemandAdapter, ServerConnector.Serve
                                         if (responseList == null) {
                                             responseList = new ArrayList<BidResponse>();
                                         }
+                                        int width = bid.getInt("w");
+                                        int height = bid.getInt("h");
                                         BidResponse newBid = null;
                                         JSONObject targetingKeywords = bid.getJSONObject("ext").getJSONObject("prebid").getJSONObject("targeting");
                                         if (Prebid.useLocalCache()) {
@@ -165,6 +179,8 @@ public class PrebidServerAdapter implements DemandAdapter, ServerConnector.Serve
                                             }
                                         }
                                         if (newBid != null) {
+                                            newBid.setResponseTime(responseTime);
+                                            newBid.setDimensions(width, height);
                                             responseList.add(newBid);
                                         }
                                         responses.put(adUnit, responseList);
@@ -269,6 +285,7 @@ public class PrebidServerAdapter implements DemandAdapter, ServerConnector.Serve
             if (ext != null && ext.length() > 0) {
                 postData.put("ext", ext);
             }
+            postData.put("test", 1);
         } catch (JSONException e) {
         }
         return postData;
@@ -286,7 +303,9 @@ public class PrebidServerAdapter implements DemandAdapter, ServerConnector.Serve
             }
             JSONObject storedRequest = new JSONObject();
             storedRequest.put("id", Prebid.getAccountId());
-            prebid.put("storedrequest", storedRequest);
+            //prebid.put("storedrequest", storedRequest);
+            JSONObject targeting = new JSONObject();
+            prebid.put("targeting", targeting);
             ext.put("prebid", prebid);
         } catch (JSONException e) {
             e.printStackTrace();
@@ -304,9 +323,9 @@ public class PrebidServerAdapter implements DemandAdapter, ServerConnector.Serve
                 JSONObject imp = new JSONObject();
                 JSONObject ext = new JSONObject();
                 imp.put("id", adUnit.getCode());
-                if (Prebid.isSecureConnection()) {
+                //if (Prebid.isSecureConnection()) {
                     imp.put("secure", 1);
-                }
+                //}
                 if (adUnit.getAdType().equals(AdType.INTERSTITIAL)) {
                     imp.put("instl", 1);
                 }

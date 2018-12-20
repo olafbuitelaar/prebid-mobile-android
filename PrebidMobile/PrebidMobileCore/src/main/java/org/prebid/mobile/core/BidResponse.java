@@ -32,8 +32,13 @@ public class BidResponse {
     private Double cpm;
     private String creative;
     private String bidderCode;
+    private int responseTime;
+    private int width;
+    private int height;
     private long createdTime;
+
     private ArrayList<Pair<String, String>> customKeywords = new ArrayList<Pair<String, String>>();
+    private boolean won;
     //endregion
 
     //region Constructor
@@ -125,9 +130,30 @@ public class BidResponse {
         return bidderCode;
     }
 
+    public int getResponseTime(){return responseTime;};
+    public void setResponseTime(int responseTime){this.responseTime=responseTime;}
+    public void setDimensions(int width, int height){
+        this.width = width;
+        this.height = height;
+    }
+    public String getSize(){
+        return this.width+"x"+this.height;
+    }
+
     @Override
     public String toString() {
         return "Bidder name: " + getBidderCode() + " | BidResponse Price: " + getCpm();
+    }
+
+    public void setWinner() {
+        this.won = true;
+    }
+    public boolean getWinner(){
+        return this.won;
+    }
+
+    public int getStatusCode() {
+        return 1;//TODO: figure out how to determine this! it doesn't seem present in the server response..
     }
     //endregion
 }
