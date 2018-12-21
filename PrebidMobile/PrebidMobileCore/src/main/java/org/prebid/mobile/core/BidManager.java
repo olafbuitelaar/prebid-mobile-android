@@ -240,11 +240,26 @@ public class BidManager {
                     keywordsPairs.add(keywords);
                 }
             }
-            //bidResponses.sort();
+            Collections.sort(bidResponses, compareBids);
+
             return keywordsPairs;
         }
         return null;
     }
+    public static Comparator<BidResponse> compareBids = new Comparator<BidResponse>() {
+        public int compare(BidResponse r1, BidResponse r2) {
+
+            double cpm1 = r1.getCpm();
+            double cpm2 = r2.getCpm();
+
+            if(cpm1>cpm2){
+                return 1;
+            }else if(cpm1<cpm2){
+                return -1;
+            }
+            return 0;
+        }
+    };
 
 
     protected interface BidReadyListener {

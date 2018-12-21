@@ -342,6 +342,7 @@ public class Prebid {
                 callMethodOnObject(adViewObj, "setKeywords", adViewKeywords);
             }
         }
+
     }
 
     private static void removeUsedKeywordsForMoPub(Object adViewObj) {
@@ -519,7 +520,7 @@ public class Prebid {
         JSONObject bidObj = new JSONObject();
         bidObj.put("bidder",bid.getBidderCode());
         bidObj.put( "won",  bid.getWinner());
-        bidObj.put("cpm", bid.getCpm());
+        bidObj.put("cpm", Math.round(bid.getCpm()*1000));
         bidObj.put("origCPM", null);
         bidObj.put("time", bid.getResponseTime());
         bidObj.put("size",  bid.getSize());
