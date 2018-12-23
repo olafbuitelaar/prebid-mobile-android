@@ -155,12 +155,12 @@ public class CacheManager {
             contextWeakRef = new WeakReference<>(context);
         }
 
-        private class JavaScriptInterface {
+        /*private class JavaScriptInterface {
             @JavascriptInterface
             public void addedCache(){
                 LogUtil.d("added to cache");
             }
-        }
+        }*/
 
 
         @Override
@@ -183,7 +183,7 @@ public class CacheManager {
                     webSettings.setJavaScriptEnabled(true);
                 }
                 cacheManager.dfpWebCache.loadDataWithBaseURL("https://pubads.g.doubleclick.net", "<html></html>", "text/html", null, null);
-                cacheManager.dfpWebCache.addJavascriptInterface(new JavaScriptInterface(), "confirmer");
+                //cacheManager.dfpWebCache.addJavascriptInterface(new JavaScriptInterface(), "confirmer");
                 CacheManager.setupBidCleanUpRunnable();
             } catch (Throwable t) {
                 // possible AndroidRuntime thrown at android.webkit.WebViewFactory.getFactoryClass
@@ -218,7 +218,8 @@ public class CacheManager {
             //String result = "<html><script> localStorage.setItem('" + this.cacheId + "', '" + escapedBid + "');console.log('STORED CACHE-ID');</script></html>";
 
             //cacheManager.dfpWebCache.loadDataWithBaseURL("https://pubads.g.doubleclick.net", result, "text/html", null, null);
-            cacheManager.dfpWebCache.loadUrl("javascript: localStorage.setItem('" + this.cacheId + "', '" + escapedBid + "');confirmer.addedCache();");
+            //cacheManager.dfpWebCache.loadUrl("javascript: localStorage.setItem('" + this.cacheId + "', '" + escapedBid + "');confirmer.addedCache();");
+            cacheManager.dfpWebCache.loadUrl("javascript: localStorage.setItem('" + this.cacheId + "', '" + escapedBid + "');");//TODO: make proper callback structure so that bids ready only is called after the bids are actually stored!
             /*cacheManager.dfpWebCache.evaluateJavascript("(function() { localStorage.setItem('" + this.cacheId + "', '" + escapedBid + "'); return '" + escapedBid + "';})();",
                     new ValueCallback<String>() {
                         @Override

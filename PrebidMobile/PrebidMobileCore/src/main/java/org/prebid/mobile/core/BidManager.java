@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -121,6 +122,14 @@ public class BidManager {
             requestBidsForAdUnits(context, adUnits);
         }
     }
+    public static void requiresAuction(String adUnitCode, Context context) {
+        if(bidMap.containsKey(adUnitCode)){
+            if(!isBidReady(adUnitCode)){
+                startNewAuction(context, getAdUnitByCode(adUnitCode));
+            }
+        }
+
+    }
 
     public static ArrayList<BidResponse> getBidsForAdUnit(String adUnitCode) {
         if(bidMap.containsKey(adUnitCode)){
@@ -129,6 +138,31 @@ public class BidManager {
         return new ArrayList<BidResponse>();
         //return  null;
     }
+
+    public static void clearBidMapForAdUnit(String adUnitCode) {
+        bidMap.remove(adUnitCode);
+    }
+
+    public static void markBidsSend(String adUnitCode) {
+        if(bidMap.containsKey(adUnitCode)){
+            for (BidResponse bidResponse : bidMap.get(adUnitCode)) {
+                bidResponse.setSendToAdserver();
+            }
+        }
+    }
+
+    public static void cleanBidsSend(String adUnitCode) {
+        if(bidMap.containsKey(adUnitCode)){
+            Iterator<BidResponse> iter = bidMap.get(adUnitCode).iterator();
+            while(iter.hasNext()){
+                if(iter.next().getSendToAndserver()){
+                    iter.remove();
+                }
+            }
+        }
+    }
+
+
 
     //endregion
 
@@ -232,15 +266,29 @@ public class BidManager {
             bidResponses = getWinningBids(adUnitCode);
         }else {
             startNewAuction(context, adUnit);//TODO: make this logic way more solid! shouldn't start a new auction when an auction for this adunit is already running! for example.
+                                            //This also get's called at onBidReady->attachBids->handleDFPCustomTargetingUpdate, which is calling to getKeywordsWhenReadyForAdUnit and triggers a new auction on IIME-OUT run the run call!
         }
-        if (bidResponses != null) {
+        if (bidResponses != null && !bidResponses.isEmpty()) {
             ArrayList<Pair<String, String>> keywordsPairs = new ArrayList<Pair<String, String>>();
-            for (BidResponse bid : bidResponses) {
+            /*for (BidResponse bid : bidResponses) {
                 for (Pair<String, String> keywords : bid.getCustomKeywords()) {
                     keywordsPairs.add(keywords);
                 }
-            }
+            }*/
             Collections.sort(bidResponses, compareBids);
+            BidResponse winner = bidResponses.get(0);
+            String prefix = "pb_";
+
+            keywordsPairs.add(new Pair<String, String>(prefix + "winner",winner.getBidderCode()));
+            keywordsPairs.add(new Pair<String, String>(prefix + "cpm", ""+Math.round(winner.getCpm()*100)));
+            keywordsPairs.add(new Pair<String, String>(prefix + "size", winner.getSize()));
+            //keywordsPairs.add(new Pair<String, String>(prefix + "deal", winner.getDeal())); //TODO ..
+
+            for (Pair<String, String> keywords : winner.getCustomKeywords()) {
+                keywordsPairs.add(keywords);
+            }
+
+
 
             return keywordsPairs;
         }
@@ -253,9 +301,9 @@ public class BidManager {
             double cpm2 = r2.getCpm();
 
             if(cpm1>cpm2){
-                return 1;
-            }else if(cpm1<cpm2){
                 return -1;
+            }else if(cpm1<cpm2){
+                return 1;
             }
             return 0;
         }

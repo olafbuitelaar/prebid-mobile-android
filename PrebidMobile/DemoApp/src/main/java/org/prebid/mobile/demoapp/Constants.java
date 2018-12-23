@@ -28,7 +28,8 @@ public class Constants {
 
     // PBS Config
     public static final String PBS_CONFIG_APPNEXUS_DEMAND = "test-imp-id";
-    public static final String PBS_CONFIG_300x250_APPNEXUS_DEMAND = "test-imp-id";
+    //public static final String PBS_CONFIG_300x250_APPNEXUS_DEMAND = "test-imp-id";
+    public static final String PBS_CONFIG_300x250_APPNEXUS_DEMAND = "test-imp-id.2";
     public static final String PBS_ACCOUNT_ID = "test-imp-id";
     // App Constants
     public static final String ADSERVER = "AdServerName";

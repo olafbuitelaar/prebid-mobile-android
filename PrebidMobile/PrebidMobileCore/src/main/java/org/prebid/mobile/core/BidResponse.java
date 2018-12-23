@@ -36,6 +36,7 @@ public class BidResponse {
     private int width;
     private int height;
     private long createdTime;
+    private boolean sendToAdserver=false;
 
     private ArrayList<Pair<String, String>> customKeywords = new ArrayList<Pair<String, String>>();
     private boolean won;
@@ -150,6 +151,13 @@ public class BidResponse {
     }
     public boolean getWinner(){
         return this.won;
+    }
+
+    public void setSendToAdserver() {
+        this.sendToAdserver = true;
+    }
+    public boolean getSendToAndserver(){
+        return this.sendToAdserver;
     }
 
     public int getStatusCode() {

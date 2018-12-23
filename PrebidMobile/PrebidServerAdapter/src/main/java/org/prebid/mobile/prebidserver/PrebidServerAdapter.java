@@ -301,6 +301,10 @@ public class PrebidServerAdapter implements DemandAdapter, ServerConnector.Serve
                 cache.put("bids", bids);
                 prebid.put("cache", cache);
             }
+            JSONObject aliases = new JSONObject();
+            aliases.put("appnexus2", "appnexus");
+            aliases.put("appnexus3", "appnexus");
+            prebid.put("aliases", aliases);
             JSONObject storedRequest = new JSONObject();
             storedRequest.put("id", Prebid.getAccountId());
             //prebid.put("storedrequest", storedRequest);

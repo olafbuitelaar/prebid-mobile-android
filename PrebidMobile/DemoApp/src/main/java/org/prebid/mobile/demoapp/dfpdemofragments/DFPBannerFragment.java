@@ -169,7 +169,7 @@ public class DFPBannerFragment extends Fragment implements Prebid.OnAttachComple
         }
         if (adView2 != null) {
             adView2.destroy();
-            setupBannerWithWait(500);
+            setupBannerWithWait(50000);
         }
     }
 

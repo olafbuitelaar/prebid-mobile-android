@@ -176,6 +176,7 @@ public class Prebid {
             //LogUtil.e(TAG, "Request is null, unable to set keywords");
         } else {
             detachUsedBid(adObj);
+            markBidsSend(adUnitCode);
 
             if (adObj.getClass() == getClassFromString(MOPUB_ADVIEW_CLASS)
                     || adObj.getClass() == getClassFromString(MOPUB_INTERSTITIAL_CLASS)) {
@@ -184,6 +185,21 @@ public class Prebid {
                 handleDFPCustomTargetingUpdate(adObj, adUnitCode, context);
             }
         }
+    }
+
+    private static void markBidsSend(String adUnitCode) {
+        BidManager.markBidsSend(adUnitCode);
+        /*bidAdunitMap.containsKey(adUnitCode)){
+            for (Object view : bidAdunitMap.get(adUnitCode)) {
+                if(((AdUnitBidMap)view). == adView){
+
+                }
+            }
+        }*/
+
+    }
+    private static void cleanBidsSend(String adUnitCode) {
+        BidManager.cleanBidsSend(adUnitCode);
     }
 
     public static void mapBidToAdView(final Object adView, String adUnitCode){
@@ -253,16 +269,28 @@ public class Prebid {
     }
 
     public static void attachBidsWhenReady(final Object adObject, final Object adView, String adUnitCode, final OnAttachCompleteListener listener, int timeOut, final Context context) {
+
+
+        bidAdunitMap.remove(adUnitCode);
+        //BidManager.clearBidMapForAdUnit(adUnitCode);
+        cleanBidsSend(adUnitCode);
+
         mapBidToAdView(adView, adUnitCode);
+
+        BidManager.requiresAuction(adUnitCode, context);//TODO: make not adunit dependant
 
         BidManager.getKeywordsWhenReadyForAdUnit(adUnitCode, timeOut, new BidManager.BidReadyListener() {
             @Override
             public void onBidReady(String adUnitCode) {
+                LogUtil.d("Bids are ready");
+
                 attachBids(adObject, adUnitCode, context);
                 listener.onAttachComplete(adObject);
             }
         });
     }
+
+
 
     //endregion
 
@@ -428,7 +456,7 @@ public class Prebid {
                 url = "https://tagmans3.adsolutions.com/log/";
                 break;
             case ADSOLUTIONS_DEV:
-                url = "http://192.168.0.45P/log/";
+                url = "http://192.168.0.45/log/";
                 break;
 
 
@@ -453,7 +481,7 @@ public class Prebid {
             statsDict.put("language", "nl");
             statsDict.put("host", "demoApp");
             statsDict.put("page", "/home");
-            statsDict.put("proto", "https");
+            statsDict.put("proto", "https:");
             statsDict.put("timeToLoad", 0);
             statsDict.put("timeToPlacement", 0);
             statsDict.put("duration", 0);
@@ -524,7 +552,7 @@ public class Prebid {
         bidObj.put("origCPM", null);
         bidObj.put("time", bid.getResponseTime());
         bidObj.put("size",  bid.getSize());
-        bidObj.put("status", bid.getStatusCode());//TODO:detect correct status //0= pending, 1= bid available, 2= no bid available, 3=bid time-out
+        bidObj.put("state", bid.getStatusCode());//TODO:detect correct status //0= pending, 1= bid available, 2= no bid available, 3=bid time-out
 
         //bidObj.put("bidderTier",null);
         //bidObj.put("tierFloor", null);
