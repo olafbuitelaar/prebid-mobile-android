@@ -4,6 +4,9 @@ import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
 import android.text.TextUtils;
+import android.util.Log;
+import android.webkit.JavascriptInterface;
+import android.webkit.ValueCallback;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 
@@ -14,14 +17,15 @@ import java.util.HashMap;
 public class CacheManager {
     // This is the class that manages three cache instances, one for DFP, one for MoPub and one for SDK rendered ad
     private WebView dfpWebCache;
+    private HashMap<String, Boolean> pendingCacheKeys;
     private HashMap<String, String> sdkCache;
     private static CacheManager cache;
 
     private CacheManager(Context context) {
         Handler handler = new Handler(Looper.getMainLooper());
-        setupBidCleanUpRunnable(handler);
         setupWebCache(context, handler);
         setupSDKCache();
+
     }
 
     public static void init(Context context) {
@@ -34,12 +38,16 @@ public class CacheManager {
         return cache;
     }
 
-    private void setupBidCleanUpRunnable(final Handler handler) {
-        handler.post(new BidCleanUpRunnable(this, handler));
+    private static void setupBidCleanUpRunnable(final Handler handler) {
+        handler.post(new BidCleanUpRunnable(getCacheManager(), handler));
+    }
+    private static void setupBidCleanUpRunnable() {
+        Handler handler = new Handler(Looper.getMainLooper());
+        setupBidCleanUpRunnable(handler);
     }
 
     private void removeCache(long now) {
-        String removeWebCache = "<html><script>var currentTime = " + String.valueOf(now) + ";" +
+        String removeWebCache = "var currentTime = " + String.valueOf(now) + ";" +
                 "\nvar toBeDeleted = [];\n" +
                 "\n" +
                 "for(i = 0; i< localStorage.length; i ++) {\n" +
@@ -53,9 +61,11 @@ public class CacheManager {
                 "\n" +
                 "for ( i = 0; i< toBeDeleted.length; i ++) {\n" +
                 "\tlocalStorage.removeItem(toBeDeleted[i]);\n" +
-                "}</script></html>";
+                "}";
         if (dfpWebCache != null) {
-            dfpWebCache.loadDataWithBaseURL("https://pubads.g.doubleclick.net", removeWebCache, "text/html", null, null);
+            LogUtil.d("cleanling cache id's");
+            //dfpWebCache.loadDataWithBaseURL("https://pubads.g.doubleclick.net", removeWebCache, "text/html", null, null);
+            dfpWebCache.loadUrl("javascript: "+removeWebCache);
         }
         if (sdkCache != null) {
             ArrayList<String> toBeDeleted = new ArrayList<String>();
@@ -77,6 +87,7 @@ public class CacheManager {
         }
 
         String cacheId = "Prebid_" + StringUtils.randomLowercaseAlphabetic(8) + "_" + String.valueOf(System.currentTimeMillis());
+        LogUtil.d("Storing Cache-ID: "+cacheId);
 
         if ("html".equals(format)) {
             saveCacheForWeb(cacheId, bid);
@@ -144,6 +155,14 @@ public class CacheManager {
             contextWeakRef = new WeakReference<>(context);
         }
 
+        private class JavaScriptInterface {
+            @JavascriptInterface
+            public void addedCache(){
+                LogUtil.d("added to cache");
+            }
+        }
+
+
         @Override
         public void run() {
             CacheManager cacheManager = cacheManagerWeakRef.get();
@@ -163,12 +182,17 @@ public class CacheManager {
                     webSettings.setDomStorageEnabled(true);
                     webSettings.setJavaScriptEnabled(true);
                 }
+                cacheManager.dfpWebCache.loadDataWithBaseURL("https://pubads.g.doubleclick.net", "<html></html>", "text/html", null, null);
+                cacheManager.dfpWebCache.addJavascriptInterface(new JavaScriptInterface(), "confirmer");
+                CacheManager.setupBidCleanUpRunnable();
             } catch (Throwable t) {
                 // possible AndroidRuntime thrown at android.webkit.WebViewFactory.getFactoryClass
                 // stemming from WebView's constructor, manifests itself in Android 5.0 and 5.1.
             }
         }
     }
+
+
 
     private static class SaveCacheForWebRunnable implements Runnable {
         private final WeakReference<CacheManager> cacheManagerWeakRef;
@@ -190,9 +214,19 @@ public class CacheManager {
             if (cacheManager.dfpWebCache == null) {
                 return;
             }
-            String escapedBid = StringUtils.escapeEcmaScript(bid);
-            String result = "<html><script> localStorage.setItem('" + cacheId + "', '" + escapedBid + "');</script></html>";
-            cacheManager.dfpWebCache.loadDataWithBaseURL("https://pubads.g.doubleclick.net", result, "text/html", null, null);
+            String escapedBid = StringUtils.escapeEcmaScript(this.bid);
+            //String result = "<html><script> localStorage.setItem('" + this.cacheId + "', '" + escapedBid + "');console.log('STORED CACHE-ID');</script></html>";
+
+            //cacheManager.dfpWebCache.loadDataWithBaseURL("https://pubads.g.doubleclick.net", result, "text/html", null, null);
+            cacheManager.dfpWebCache.loadUrl("javascript: localStorage.setItem('" + this.cacheId + "', '" + escapedBid + "');confirmer.addedCache();");
+            /*cacheManager.dfpWebCache.evaluateJavascript("(function() { localStorage.setItem('" + this.cacheId + "', '" + escapedBid + "'); return '" + escapedBid + "';})();",
+                    new ValueCallback<String>() {
+                        @Override
+                        public void onReceiveValue(String s) {
+                            Log.d("LogName", s);
+                        }
+                    });*/
+            LogUtil.d("Execute Storing Cache-ID: "+this.cacheId+ " "+escapedBid);
         }
     }
 }
