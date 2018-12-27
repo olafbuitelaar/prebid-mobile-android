@@ -449,6 +449,30 @@ public class Prebid {
         //}
     }
 
+    public static void adUnitReceivedDefault(Object adView) {
+        AdUnitBidMap bidmap = Prebid.getAdunitMapByAdView(adView);
+        bidmap.isDefault = true;
+    }
+
+    public static void adUnitReceivedAppEvent(Object adView, String instruction, String prm) {
+        if (instruction.equals("deliveryData")) {
+            LogUtil.d("DPF-Banner", "onAppEvent" + instruction+":"+ prm);
+            String[] serveData = prm.split("\\|");
+            AdUnitBidMap bidmap = Prebid.getAdunitMapByAdView(adView);
+            if(serveData.length==2) {
+                bidmap.data.lineItemId = serveData[0];
+                bidmap.data.creativeId = serveData[1];
+            }
+            //Prebid.gatherStats();
+        }else if(instruction.equals("wonHB")){
+            //TODO: match cache id on available bids, to determine the exact winner
+            AdUnitBidMap bidmap = Prebid.getAdunitMapByAdView(adView);
+            //bidmap.isWinner = true;
+
+            Prebid.markWinner(bidmap.adUnitCode, prm);
+        }
+    }
+
     private static void trackStats(JSONObject stats){
         String url = null;
         switch (host){
@@ -479,7 +503,7 @@ public class Prebid {
             statsDict.put("viewWidth", 0);
             statsDict.put("viewHeight", 0);
             statsDict.put("language", "nl");
-            statsDict.put("host", "demoApp");
+            statsDict.put("host", "demoAppA");
             statsDict.put("page", "/home");
             statsDict.put("proto", "https:");
             statsDict.put("timeToLoad", 0);

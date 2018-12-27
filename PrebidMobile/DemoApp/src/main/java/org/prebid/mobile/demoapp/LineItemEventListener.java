@@ -24,8 +24,7 @@ public class LineItemEventListener extends AdListener {
     public void onAdFailedToLoad(int i) {
         super.onAdFailedToLoad(i);
         if(i == 3){//3=ERROR_CODE_NO_FILL
-            AdUnitBidMap bidmap = Prebid.getAdunitMapByAdView(this.adView);
-            bidmap.isDefault = true;
+            Prebid.adUnitReceivedDefault(this.adView);
         }
         LogUtil.d("DPF-Banner", "OnAdFailedToLoad");
     }

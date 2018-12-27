@@ -17,19 +17,7 @@ public class LineItemDataReader implements AppEventListener {
 
     @Override
     public void onAppEvent(String name, String data) {
-        if (name.equals("deliveryData")) {
-            LogUtil.d("DPF-Banner", "onAppEvent" + name+":"+ data);
-            String[] serveData = data.split("|");
-            AdUnitBidMap bidmap = Prebid.getAdunitMapByAdView(this.adView);
-            bidmap.data.lineItemId = serveData[0];
-            bidmap.data.creativeId = serveData[1];
-            //Prebid.gatherStats();
-        }else if(name.equals("wonHB")){
-            //TODO: match cache id on available bids, to determine the exact winner
-            AdUnitBidMap bidmap = Prebid.getAdunitMapByAdView(this.adView);
-            //bidmap.isWinner = true;
+        Prebid.adUnitReceivedAppEvent(this.adView, name, data);
 
-            Prebid.markWinner(bidmap.adUnitCode, data);
-        }
     }
 }
