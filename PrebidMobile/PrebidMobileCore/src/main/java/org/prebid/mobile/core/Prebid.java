@@ -54,6 +54,8 @@ public class Prebid {
     private static AdServer adServer = AdServer.UNKNOWN;
     private static Map<String, List<Object>> bidAdunitMap = new HashMap<String, List<Object>>();
     private static Object appListener;
+    private static String appName;
+    private static String appPage;
 
     public static void markWinner(String adUnitCode, String creativeId) {
         ArrayList<BidResponse> bids = BidManager.getBidsForAdUnit(adUnitCode);
@@ -115,9 +117,11 @@ public class Prebid {
      * @param accountId Prebid Server account
      * @param adServer  Primary AdServer you're using for your app
      * @param host      Host you're using for your app
+     * @param appName   The name of the app
+     * @param appListener   the adView applistener from the app
      * @throws PrebidException
      */
-    public static void init(Context context, ArrayList<AdUnit> adUnits, String accountId, AdServer adServer, Host host, Object appListener) throws PrebidException {
+    public static void init(Context context, ArrayList<AdUnit> adUnits, String accountId, AdServer adServer, Host host, String appName, Object appListener) throws PrebidException {
         LogUtil.i("Initializing with a list of AdUnits");
         // validate context
         if (context == null) {
@@ -130,6 +134,7 @@ public class Prebid {
         Prebid.appListener = appListener;
         Prebid.accountId = accountId;
         Prebid.adServer = adServer;
+        Prebid.appName = appName;
         if (AdServer.MOPUB.equals(Prebid.adServer)) {
             Prebid.useLocalCache = false;
         }
@@ -169,6 +174,9 @@ public class Prebid {
         CacheManager.init(context);
         // start ad requests
         BidManager.requestBidsForAdUnits(context, adUnits);
+    }
+    public static void setAppPage(String appPage){
+        Prebid.appPage = appPage;
     }
 
     public static void attachBids(Object adObj, String adUnitCode, Context context) {
@@ -503,8 +511,8 @@ public class Prebid {
             statsDict.put("viewWidth", 0);
             statsDict.put("viewHeight", 0);
             statsDict.put("language", "nl");
-            statsDict.put("host", "demoAppA");
-            statsDict.put("page", "/home");
+            statsDict.put("host", appName);
+            statsDict.put("page", appPage);
             statsDict.put("proto", "https:");
             statsDict.put("timeToLoad", 0);
             statsDict.put("timeToPlacement", 0);
