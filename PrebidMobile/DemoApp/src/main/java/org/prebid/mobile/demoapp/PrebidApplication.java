@@ -106,6 +106,7 @@ public class PrebidApplication extends Application {
                     }
                     );*/
             //Prebid.init(getApplicationContext(), adUnits, PBS_ACCOUNT_ID, Prebid.AdServer.DFP, Prebid.Host.ADSOLUTIONS_DEV, new LineItemDataReader());
+
             Prebid.init(getApplicationContext(), adUnits, PBS_ACCOUNT_ID, Prebid.AdServer.DFP, Prebid.Host.ADSOLUTIONS, "demoAppA", new LineItemDataReader());
             Prebid.setAppPage("/home");
         } catch (PrebidException e) {

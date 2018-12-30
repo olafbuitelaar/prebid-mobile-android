@@ -16,10 +16,17 @@
 
 package org.prebid.mobile.core;
 
+import android.app.Activity;
+import android.app.Application;
 import android.content.Context;
+import android.graphics.Point;
+import android.os.Build;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.util.DisplayMetrics;
 import android.util.Pair;
+import android.view.Display;
+import android.view.WindowManager;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -40,6 +47,7 @@ import java.util.Set;
  * Prebid class is the Entry point for Apps in the Prebid Module.
  */
 public class Prebid {
+    private static Context context;
     private static String PREBID_SERVER = "org.prebid.mobile.prebidserver.PrebidServerAdapter";
 
     private static String MOPUB_ADVIEW_CLASS = "com.mopub.mobileads.MoPubView";
@@ -127,10 +135,14 @@ public class Prebid {
         if (context == null) {
             throw new PrebidException(PrebidException.PrebidError.NULL_CONTEXT);
         }
+
         // validate account id
         if (TextUtils.isEmpty(accountId)) {
             throw new PrebidException(PrebidException.PrebidError.INVALID_ACCOUNT_ID);
         }
+
+        Prebid.context = context;
+
         Prebid.appListener = appListener;
         Prebid.accountId = accountId;
         Prebid.adServer = adServer;
@@ -505,11 +517,42 @@ public class Prebid {
     public static void gatherStats(){
         JSONObject statsDict = new JSONObject();
         try {
-            statsDict.put("client", 0);
-            statsDict.put("screenWidth", 0);
-            statsDict.put("screenHeight", 0);
-            statsDict.put("viewWidth", 0);
-            statsDict.put("viewHeight", 0);
+
+            int Measuredwidth = 0;
+            int Measuredheight = 0;
+            Point size = new Point();
+            WindowManager w = (WindowManager) ((Application)Prebid.context).getSystemService(Context.WINDOW_SERVICE);
+
+            DisplayMetrics displayMetrics = new DisplayMetrics();
+            w.getDefaultDisplay().getMetrics(displayMetrics);
+            int height = displayMetrics.heightPixels;
+            int width = displayMetrics.widthPixels;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+                w.getDefaultDisplay().getRealMetrics(displayMetrics);
+                height = displayMetrics.heightPixels;
+                width = displayMetrics.widthPixels;
+            }
+
+            if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB)    {
+                w.getDefaultDisplay().getSize(size);
+                Measuredwidth = size.x;
+                Measuredheight = size.y;
+
+
+
+
+            }else{
+                Display d = w.getDefaultDisplay();
+                Measuredwidth = d.getWidth();
+                Measuredheight = d.getHeight();
+            }
+
+
+            statsDict.put("client", accountId);
+            statsDict.put("screenWidth", width);
+            statsDict.put("screenHeight", height);
+            statsDict.put("viewWidth", Measuredwidth);
+            statsDict.put("viewHeight", Measuredheight);
             statsDict.put("language", "nl");
             statsDict.put("host", appName);
             statsDict.put("page", appPage);
@@ -523,7 +566,7 @@ public class Prebid {
 
             trackStats(statsDict);
         }catch (JSONException e){
-
+            e.printStackTrace();
         }
 
 
