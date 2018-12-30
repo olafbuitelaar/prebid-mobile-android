@@ -125,7 +125,10 @@ public class BidManager {
     public static void requiresAuction(String adUnitCode, Context context) {
         if(bidMap.containsKey(adUnitCode)){
             if(!isBidReady(adUnitCode)){
-                startNewAuction(context, getAdUnitByCode(adUnitCode));
+                AdUnit adunit  = getAdUnitByCode(adUnitCode);
+                if(!adunit.isRequesting) {
+                    startNewAuction(context, adunit);
+                }
             }
         }
 
@@ -283,6 +286,13 @@ public class BidManager {
             keywordsPairs.add(new Pair<String, String>(prefix + "cpm", ""+Math.round(winner.getCpm()*100)));
             keywordsPairs.add(new Pair<String, String>(prefix + "size", winner.getSize()));
             //keywordsPairs.add(new Pair<String, String>(prefix + "deal", winner.getDeal())); //TODO ..
+
+
+            keywordsPairs.add(new Pair<String, String>("hb_size", winner.getSize()));
+            keywordsPairs.add(new Pair<String, String>("hb_env", "mobile-app"));
+            keywordsPairs.add(new Pair<String, String>("hb_format", "html"));
+            keywordsPairs.add(new Pair<String, String>("hb_cache_id", winner.getCreative()));
+
 
             for (Pair<String, String> keywords : winner.getCustomKeywords()) {
                 keywordsPairs.add(keywords);

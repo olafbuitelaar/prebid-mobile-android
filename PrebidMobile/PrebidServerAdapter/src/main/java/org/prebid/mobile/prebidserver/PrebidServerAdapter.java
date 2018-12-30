@@ -49,12 +49,24 @@ public class PrebidServerAdapter implements DemandAdapter, ServerConnector.Serve
         // Batch 10 calls for each request to server
 
         ArrayList<ArrayList<AdUnit>> adUnitsList = batchAdUnits(adUnits);
+        markRequesting();
         if (adUnitsList != null && !adUnitsList.isEmpty()) {
             for (ArrayList batchedAdUnits : adUnitsList) {
                 JSONObject postData = getPostData(context, batchedAdUnits);
                 LogUtil.d(Settings.TAG, "Prebid Mobile send request with: " + postData.toString());
                 new ServerConnector(postData, this, getHost(), context).execute();
             }
+        }
+    }
+
+    private void markRequesting() {
+        for (AdUnit adunit: this.adUnits) {
+            adunit.isRequesting = true;
+        }
+    }
+    private void markDone() {
+        for (AdUnit adunit: this.adUnits) {
+            adunit.isRequesting = false;
         }
     }
 
@@ -194,6 +206,7 @@ public class PrebidServerAdapter implements DemandAdapter, ServerConnector.Serve
             }
             for (AdUnit adUnit : adUnits) {
                 ArrayList<BidResponse> results = responses.get(adUnit);
+                adUnit.isRequesting = false;
                 if (results != null && !results.isEmpty()) {
                     // save the bids sorted
                     if (Prebid.useLocalCache()) {

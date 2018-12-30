@@ -22,6 +22,7 @@ import java.util.UUID;
  * AdUnit class defines the configuration for auction.
  */
 public abstract class AdUnit {
+    public boolean isRequesting;
     //region Class variables
     protected String auctionId;
     protected String code; // Unique code for AdUnit set by user.

@@ -7,6 +7,7 @@ public class AdUnitBidMap
     public boolean isWinner = false;
     public boolean isDefault = false;
     public AdUnitBidData data;
+
     public AdUnitBidMap(Object adView, String adUnitCode){
         this.adView = adView;
         this.adUnitCode = adUnitCode;
