@@ -40,6 +40,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -64,6 +65,7 @@ public class Prebid {
     private static Object appListener;
     private static String appName;
     private static String appPage;
+    private static long lastGatherStats = System.currentTimeMillis();
 
     public static void markWinner(String adUnitCode, String creativeId) {
         ArrayList<BidResponse> bids = BidManager.getBidsForAdUnit(adUnitCode);
@@ -73,6 +75,12 @@ public class Prebid {
                 bid.setWinner();
             }
         }
+    }
+
+    public static void markAdUnitLoaded(Object adView) {
+        AdUnitBidMap adunitmap = getAdunitMapByAdView(adView);
+        AdUnit adUnit = BidManager.getAdUnitByCode(adunitmap.adUnitCode);
+        adUnit.stopLoadTime = System.currentTimeMillis();
     }
 
     public enum AdServer {
@@ -147,6 +155,8 @@ public class Prebid {
         Prebid.accountId = accountId;
         Prebid.adServer = adServer;
         Prebid.appName = appName;
+        Prebid.lastGatherStats = System.currentTimeMillis();
+
         if (AdServer.MOPUB.equals(Prebid.adServer)) {
             Prebid.useLocalCache = false;
         }
@@ -305,6 +315,9 @@ public class Prebid {
                 LogUtil.d("Bids are ready");
 
                 attachBids(adObject, adUnitCode, context);
+                //assume the "user" calls load the banners here (in the callback);
+                AdUnit adunit = BidManager.getAdUnitByCode(adUnitCode);
+                adunit.startLoadTime = System.currentTimeMillis();
                 listener.onAttachComplete(adObject);
             }
         });
@@ -547,22 +560,24 @@ public class Prebid {
                 Measuredheight = d.getHeight();
             }
 
+            String currentLang = Locale.getDefault().getLanguage();
 
             statsDict.put("client", accountId);
             statsDict.put("screenWidth", width);
             statsDict.put("screenHeight", height);
             statsDict.put("viewWidth", Measuredwidth);
             statsDict.put("viewHeight", Measuredheight);
-            statsDict.put("language", "nl");
+            statsDict.put("language", currentLang);
             statsDict.put("host", appName);
             statsDict.put("page", appPage);
             statsDict.put("proto", "https:");
             statsDict.put("timeToLoad", 0);
             statsDict.put("timeToPlacement", 0);
-            statsDict.put("duration", 0);
+            statsDict.put("duration", System.currentTimeMillis() - Prebid.lastGatherStats);
 
             statsDict.put("placements", gatherPlacements());
 
+            Prebid.lastGatherStats = System.currentTimeMillis();
 
             trackStats(statsDict);
         }catch (JSONException e){
@@ -591,18 +606,41 @@ public class Prebid {
         return sizesDict;
     }
     private static JSONObject gatherSize(AdUnitBidMap placement) throws JSONException{
-        JSONObject sizesDict = new JSONObject();
+        JSONObject sizeDict = new JSONObject();
         JSONObject prebidDict = new JSONObject();
         JSONArray tiersList = new JSONArray();
         JSONObject tierDict = new JSONObject();
         JSONArray bidsList = new JSONArray();
+        JSONObject adserverDict = new JSONObject();
+        JSONObject deliveryDict = new JSONObject();
 
 
-        sizesDict.put("id", 0);
-        sizesDict.put("isDefault", placement.isDefault);
-        sizesDict.put("viaAdserver", true);
-        sizesDict.put("active", true);
-        sizesDict.put("prebid", prebidDict);
+        AdUnit adunit = BidManager.getAdUnitByCode(placement.adUnitCode);
+
+
+        sizeDict.put("id", 0);
+        sizeDict.put("isDefault", placement.isDefault);
+        sizeDict.put("viaAdserver", true);
+        sizeDict.put("active", true);
+        sizeDict.put("timeToLoad", adunit.getTimeToLoad());
+
+        String adunitId = (String) callMethodOnObject(placement.adView, "getAdUnitId");
+        adunitId = adunitId.replaceFirst("^/\\d+/","");
+        if(adunitId.charAt(0) != '/'){
+            adunitId = "/"+adunitId;
+        }
+        adserverDict.put("name","DFP");
+        adserverDict.put("id", adunitId);
+
+        deliveryDict.put("lineitemId", placement.data.lineItemId);
+        deliveryDict.put("creativeId", placement.data.creativeId);
+
+        adserverDict.put("delivery", deliveryDict);
+
+        sizeDict.put("adserver", adserverDict);
+
+
+        sizeDict.put("prebid", prebidDict);
         prebidDict.put("tiers", tiersList);
 
         tiersList.put(tierDict);
@@ -616,7 +654,7 @@ public class Prebid {
             bidsList.put(jsonBid);
         }
 
-        return sizesDict;
+        return sizeDict;
     }
 
     private static JSONObject gatherBid(BidResponse bid) throws  JSONException{
@@ -625,7 +663,7 @@ public class Prebid {
         bidObj.put( "won",  bid.getWinner());
         bidObj.put("cpm", Math.round(bid.getCpm()*1000));
         bidObj.put("origCPM", null);
-        bidObj.put("time", bid.getResponseTime());
+        bidObj.put("time", bid.getResponseTime());//TODO: should this include the roundtrip to the prebid server? or should this be an additional metric
         bidObj.put("size",  bid.getSize());
         bidObj.put("state", bid.getStatusCode());//TODO:detect correct status //0= pending, 1= bid available, 2= no bid available, 3=bid time-out
 

@@ -23,6 +23,9 @@ import java.util.UUID;
  */
 public abstract class AdUnit {
     public boolean isRequesting;
+    public long startLoadTime;
+    public long stopLoadTime;
+
     //region Class variables
     protected String auctionId;
     protected String code; // Unique code for AdUnit set by user.
@@ -145,6 +148,18 @@ public abstract class AdUnit {
             return true;
         }
         return false;
+    }
+
+    public long getTimeToLoad(){
+        if(startLoadTime>0) {
+            if (stopLoadTime < startLoadTime) {
+                return System.currentTimeMillis() - startLoadTime;
+            }else{
+                return stopLoadTime - startLoadTime;
+            }
+        }else{
+            return 0;
+        }
     }
 
     //endregion

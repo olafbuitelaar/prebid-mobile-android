@@ -22,10 +22,11 @@ public class LineItemEventListener extends AdListener {
 
     @Override
     public void onAdFailedToLoad(int i) {
-        super.onAdFailedToLoad(i);
+		super.onAdFailedToLoad(i);
         if(i == 3){//3=ERROR_CODE_NO_FILL
             Prebid.adUnitReceivedDefault(this.adView);
         }
+        Prebid.markAdUnitLoaded(this.adView);
         LogUtil.d("DPF-Banner", "OnAdFailedToLoad");
     }
 
@@ -45,6 +46,7 @@ public class LineItemEventListener extends AdListener {
     public void onAdLoaded() {
         super.onAdLoaded();
         LogUtil.d("DPF-Banner", "onAdLoaded");
+        Prebid.markAdUnitLoaded(this.adView);
         Prebid.gatherStats();//tODO find a good location to trigger this
     }
 
