@@ -626,9 +626,9 @@ public class Prebid {
 
         String adunitId = (String) callMethodOnObject(placement.adView, "getAdUnitId");
         adunitId = adunitId.replaceFirst("^/\\d+/","");
-        if(adunitId.charAt(0) != '/'){
-            adunitId = "/"+adunitId;
-        }
+        //if(adunitId.charAt(0) != '/'){
+            //adunitId = "/"+adunitId;
+        //}
         adserverDict.put("name","DFP");
         adserverDict.put("id", adunitId);
 
