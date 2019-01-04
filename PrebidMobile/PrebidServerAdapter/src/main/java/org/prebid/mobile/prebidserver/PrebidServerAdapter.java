@@ -156,6 +156,12 @@ public class PrebidServerAdapter implements DemandAdapter, ServerConnector.Serve
                                         }
                                         int width = bid.getInt("w");
                                         int height = bid.getInt("h");
+                                        //possible deal id implementation
+                                        String dealId = null;
+                                        if(bid.has("dealid")) {
+                                            dealId = bid.getString("dealid");
+                                        }
+
                                         BidResponse newBid = null;
                                         JSONObject targetingKeywords = bid.getJSONObject("ext").getJSONObject("prebid").getJSONObject("targeting");
                                         if (Prebid.useLocalCache()) {
@@ -215,6 +221,9 @@ public class PrebidServerAdapter implements DemandAdapter, ServerConnector.Serve
                                             }
                                         }
                                         if (newBid != null) {
+                                            if(dealId != null && !dealId.isEmpty()){
+                                                newBid.dealId = dealId;
+                                            }
                                             newBid.setResponseTime(responseTime);
                                             newBid.setDimensions(width, height);
                                             responseList.add(newBid);
@@ -224,6 +233,7 @@ public class PrebidServerAdapter implements DemandAdapter, ServerConnector.Serve
                                 }
                             }
                         } catch (JSONException e) {
+                            e.printStackTrace();
                         }
                     }
                 }

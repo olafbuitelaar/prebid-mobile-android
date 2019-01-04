@@ -666,6 +666,9 @@ public class Prebid {
         bidObj.put("time", bid.getResponseTime());//TODO: should this include the roundtrip to the prebid server? or should this be an additional metric
         bidObj.put("size",  bid.getSize());
         bidObj.put("state", bid.getStatusCode());//TODO:detect correct status //0= pending, 1= bid available, 2= no bid available, 3=bid time-out
+        if(bid.dealId != null && !bid.dealId.isEmpty()){
+            bidObj.put("dealId", bid.getStatusCode());
+        }
 
         //bidObj.put("bidderTier",null);
         //bidObj.put("tierFloor", null);

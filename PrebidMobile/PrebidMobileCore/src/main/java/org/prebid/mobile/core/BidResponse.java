@@ -28,6 +28,7 @@ import java.util.ArrayList;
 public class BidResponse {
     //region Class Variables
     private static final long DEFAULT_EXPIRY = 5 * 60 * 1000;
+    public String dealId;
     private long expiryTime = DEFAULT_EXPIRY;
     private Double cpm;
     private String creative;

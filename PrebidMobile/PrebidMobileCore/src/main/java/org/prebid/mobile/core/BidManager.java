@@ -286,6 +286,9 @@ public class BidManager {
                 keywordsPairs.add(new Pair<String, String>(prefix + "winner", winner.getBidderCode()));
                 keywordsPairs.add(new Pair<String, String>(prefix + "cpm", "" + Math.round(winner.getCpm() * 100)));
                 keywordsPairs.add(new Pair<String, String>(prefix + "size", winner.getSize()));
+                if(winner.dealId != null && !winner.dealId.isEmpty()){
+                    keywordsPairs.add(new Pair<String, String>(prefix + "deal", winner.dealId));
+                }
                 //keywordsPairs.add(new Pair<String, String>(prefix + "deal", winner.getDeal())); //TODO ..
 
 
