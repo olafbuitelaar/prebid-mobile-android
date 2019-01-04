@@ -280,22 +280,24 @@ public class BidManager {
             }*/
             Collections.sort(bidResponses, compareBids);
             BidResponse winner = bidResponses.get(0);
-            String prefix = "pb_";
+            if(winner != null && winner.getCpm()>0) {
+                String prefix = "pb_";
 
-            keywordsPairs.add(new Pair<String, String>(prefix + "winner",winner.getBidderCode()));
-            keywordsPairs.add(new Pair<String, String>(prefix + "cpm", ""+Math.round(winner.getCpm()*100)));
-            keywordsPairs.add(new Pair<String, String>(prefix + "size", winner.getSize()));
-            //keywordsPairs.add(new Pair<String, String>(prefix + "deal", winner.getDeal())); //TODO ..
-
-
-            keywordsPairs.add(new Pair<String, String>("hb_size", winner.getSize()));
-            keywordsPairs.add(new Pair<String, String>("hb_env", "mobile-app"));
-            keywordsPairs.add(new Pair<String, String>("hb_format", "html"));
-            keywordsPairs.add(new Pair<String, String>("hb_cache_id", winner.getCreative()));
+                keywordsPairs.add(new Pair<String, String>(prefix + "winner", winner.getBidderCode()));
+                keywordsPairs.add(new Pair<String, String>(prefix + "cpm", "" + Math.round(winner.getCpm() * 100)));
+                keywordsPairs.add(new Pair<String, String>(prefix + "size", winner.getSize()));
+                //keywordsPairs.add(new Pair<String, String>(prefix + "deal", winner.getDeal())); //TODO ..
 
 
-            for (Pair<String, String> keywords : winner.getCustomKeywords()) {
-                keywordsPairs.add(keywords);
+                keywordsPairs.add(new Pair<String, String>("hb_size", winner.getSize()));
+                keywordsPairs.add(new Pair<String, String>("hb_env", "mobile-app"));
+                keywordsPairs.add(new Pair<String, String>("hb_format", "html"));
+                keywordsPairs.add(new Pair<String, String>("hb_cache_id", winner.getCreative()));
+
+
+                for (Pair<String, String> keywords : winner.getCustomKeywords()) {
+                    keywordsPairs.add(keywords);
+                }
             }
 
 

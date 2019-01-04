@@ -231,6 +231,37 @@ public class PrebidServerAdapter implements DemandAdapter, ServerConnector.Serve
             for (AdUnit adUnit : adUnits) {
                 ArrayList<BidResponse> results = responses.get(adUnit);
                 adUnit.isRequesting = false;
+
+                //TODO: optimze
+                //      assume all adunits have the same bidders!
+                try {
+                    if (response.has("ext") && response.getJSONObject("ext").has("responsetimemillis")) {
+                        if (results != null && !results.isEmpty()) {
+                            JSONObject bidders = response.getJSONObject("ext").getJSONObject("responsetimemillis");
+                            Iterator<String> bidderNames = bidders.keys();
+                            while(bidderNames.hasNext()){
+                                boolean found = false;
+                                String bidder = bidderNames.next();
+                                for (int i = 0; i < results.size(); i++) {
+                                    if(results.get(i).getBidderCode().equals(bidder)){
+                                        found = true;
+                                        break;
+                                    }
+                                }
+                                if(!found){
+                                    BidResponse emptyBid = new BidResponse(0.0,null);
+                                    emptyBid.setBidderCode(bidder);
+                                    emptyBid.setResponseTime((int)bidders.get(bidder));
+                                    emptyBid.setStatusCode(2);
+                                    results.add(emptyBid);
+                                }
+                            }
+                        }
+                    }
+                }catch (JSONException e){
+
+                }
+
                 if (results != null && !results.isEmpty()) {
                     // save the bids sorted
                     if (Prebid.useLocalCache()) {

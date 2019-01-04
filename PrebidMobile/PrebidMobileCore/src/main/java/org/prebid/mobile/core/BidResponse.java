@@ -32,6 +32,7 @@ public class BidResponse {
     private Double cpm;
     private String creative;
     private String bidderCode;
+    private int responseCode = 1;
     private int responseTime;
     private int width;
     private int height;
@@ -127,7 +128,7 @@ public class BidResponse {
     }
 
 
-    String getBidderCode() {
+    public String getBidderCode() {
         return bidderCode;
     }
 
@@ -161,7 +162,10 @@ public class BidResponse {
     }
 
     public int getStatusCode() {
-        return 1;//TODO: figure out how to determine this! it doesn't seem present in the server response..
+        return responseCode;//TODO: figure out how to determine this! it doesn't seem present in the server response..
+    }
+    public void setStatusCode(int code){
+        responseCode = code;
     }
     //endregion
 }
