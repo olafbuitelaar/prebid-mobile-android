@@ -83,12 +83,12 @@ mkdir $TEMPDIR
 ###########################
 # Test and Build
 ###########################
-echoX "Run unit tests"
-cd $LIBDIR
-(./gradlew -i --no-daemon clean test > $LOGPATH/testResults.log 2>&1) || (die "Unit tests failed, check log in $LOGPATH/testResults.log") &
-PID=$!
-spinner $PID &
-wait $PID
+#echoX "Run unit tests"
+#cd $LIBDIR
+#(./gradlew -i --no-daemon clean test > $LOGPATH/testResults.log 2>&1) || (die "Unit tests failed, check log in $LOGPATH/testResults.log") &
+#PID=$!
+#spinner $PID &
+#wait $PID
 
 echoX "Assemble builds"
 cd $LIBDIR
