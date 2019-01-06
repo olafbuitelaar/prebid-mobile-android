@@ -12,6 +12,8 @@
 # Helper Methods
 ######################
 set -e
+#set -x
+
 
 function echoX {
 echo -e "PREBID BUILDLOG: $@"
@@ -47,6 +49,12 @@ die() { echoX "$@" 1>&2 ; echoX "End Script"; exit 1;  }
 #set -e
 
 # file paths
+
+JAVA_HOME="C:/Program Files/Android/Android Studio/jre/"
+PATH="$PATH;/mnt/c/Program Files/Android/Android Studio/jre/bin/"
+
+echo $PATH
+
 BASEDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 OUTDIR=$BASEDIR/out
 LOGPATH=$OUTDIR/logs
@@ -83,20 +91,24 @@ mkdir $TEMPDIR
 ###########################
 # Test and Build
 ###########################
-echoX "Run unit tests"
-cd $LIBDIR
-(./gradlew -i --no-daemon clean test > $LOGPATH/testResults.log 2>&1) || (die "Unit tests failed, check log in $LOGPATH/testResults.log") &
-PID=$!
-spinner $PID &
-wait $PID
+# echoX "Run unit tests"
+# cd $LIBDIR
+# (./gradlew -i --no-daemon clean test > $LOGPATH/testResults.log 2>&1) || (die "Unit tests failed, check log in $LOGPATH/testResults.log") &
+# PID=$!
+# spinner $PID &
+# wait $PID
 
 echoX "Assemble builds"
 cd $LIBDIR
 # clean existing build results, exclude test task, and assemble new release build
-(./gradlew -i --no-daemon -x test build > $LOGPATH/build.log 2>&1 || die "Build failed, check log in $LOGPATH/build.log" ) &
+(cmd.exe /c "gradlew.bat -i --no-daemon -x test build" > $LOGPATH/build.log 2>&1 || die "Build failed, check log in $LOGPATH/build.log" ) &
 PID=$!
 spinner $PID &
 wait $PID
+
+echo $PID
+
+#exit 0
 
 echoX "Start packaging product"
 cd $TEMPDIR
