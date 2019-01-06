@@ -174,9 +174,9 @@ public class DFPBannerFragment extends Fragment implements Prebid.OnAttachComple
     }
 
     @Override
-    public void onAttachComplete(Object adObj) {
-        if (adView2 != null && adObj != null && adObj instanceof PublisherAdRequest) {
-            adView2.loadAd((PublisherAdRequest) adObj);
+    public void onAttachComplete(Object adView, Object adObj) {
+        if (adView instanceof PublisherAdView  && adObj instanceof PublisherAdRequest) {
+            ((PublisherAdView)adView).loadAd((PublisherAdRequest) adObj);
             Prebid.detachUsedBid(adObj);
         }
     }

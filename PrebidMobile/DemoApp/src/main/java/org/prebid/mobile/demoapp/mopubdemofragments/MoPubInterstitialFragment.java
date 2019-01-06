@@ -75,7 +75,7 @@ public class MoPubInterstitialFragment extends Fragment implements Prebid.OnAtta
     }
 
     @Override
-    public void onAttachComplete(Object adObj) {
+    public void onAttachComplete(Object adView,Object adObj) {
         interstitialAdView.load();
         Prebid.detachUsedBid(adObj);
     }

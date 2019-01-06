@@ -106,7 +106,7 @@ public class Prebid {
         /**
          * Called whenever the bid has been attached to the Banner view, or when the timeout has occurred. Which ever is the earliest.
          */
-        void onAttachComplete(Object adObj);
+        void onAttachComplete(Object adView,Object adObj);
     }
 
     public static AdServer getAdServer() {
@@ -288,15 +288,15 @@ public class Prebid {
         }
     }
 
-    public static void attachBidsWhenReady(final Object adObject, String adUnitCode, final OnAttachCompleteListener listener, int timeOut, final Context context) {
+    /*public static void attachBidsWhenReady(final Object adObject, String adUnitCode, final OnAttachCompleteListener listener, int timeOut, final Context context) {
         BidManager.getKeywordsWhenReadyForAdUnit(adUnitCode, timeOut, new BidManager.BidReadyListener() {
             @Override
             public void onBidReady(String adUnitCode) {
                 attachBids(adObject, adUnitCode, context);
-                listener.onAttachComplete(adObject);
+                listener.onAttachComplete(null, adObject);
             }
         });
-    }
+    }*/
 
     public static void attachBidsWhenReady(final Object adObject, final Object adView, String adUnitCode, final OnAttachCompleteListener listener, int timeOut, final Context context) {
 
@@ -318,7 +318,7 @@ public class Prebid {
                 //assume the "user" calls load the banners here (in the callback);
                 AdUnit adunit = BidManager.getAdUnitByCode(adUnitCode);
                 adunit.startLoadTime = System.currentTimeMillis();
-                listener.onAttachComplete(adObject);
+                listener.onAttachComplete(adView, adObject);
             }
         });
     }

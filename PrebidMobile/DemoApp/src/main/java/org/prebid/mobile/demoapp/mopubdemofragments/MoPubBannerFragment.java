@@ -71,7 +71,7 @@ public class MoPubBannerFragment extends Fragment implements Prebid.OnAttachComp
         adView2.setLayoutParams(lp);
         adFrame.addView(adView2);
         //region Prebid API usage
-        Prebid.attachBidsWhenReady(adView2, Constants.BANNER_300x250, this, waitTime, this.getActivity());
+        //Prebid.attachBidsWhenReady(adView2, Constants.BANNER_300x250, this, waitTime, this.getActivity());
         //endregion
 
     }
@@ -88,7 +88,7 @@ public class MoPubBannerFragment extends Fragment implements Prebid.OnAttachComp
     }
 
     @Override
-    public void onAttachComplete(Object adObj) {
+    public void onAttachComplete(Object adView, Object adObj) {
         if (adObj != null && adObj instanceof MoPubView) {
             ((MoPubView) adObj).loadAd();
         }
