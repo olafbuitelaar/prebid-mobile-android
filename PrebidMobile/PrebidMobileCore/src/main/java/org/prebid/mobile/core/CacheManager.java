@@ -9,17 +9,21 @@ import android.webkit.JavascriptInterface;
 import android.webkit.ValueCallback;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
+import android.webkit.WebViewClient;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
 
 public class CacheManager {
     // This is the class that manages three cache instances, one for DFP, one for MoPub and one for SDK rendered ad
     private WebView dfpWebCache;
     private HashMap<String, Boolean> pendingCacheKeys;
     private HashMap<String, String> sdkCache;
+    private HashMap<String, String> pendingCache = new HashMap<>();
     private static CacheManager cache;
+    private static boolean webViewLoaded = false;
 
     private CacheManager(Context context) {
         Handler handler = new Handler(Looper.getMainLooper());
@@ -103,8 +107,23 @@ public class CacheManager {
     }
 
     private void saveCacheForWeb(final String cacheId, final String bid) {
-        Handler handler = new Handler(Looper.getMainLooper());
-        handler.postAtFrontOfQueue(new SaveCacheForWebRunnable(this, cacheId, bid));
+        if(!webViewLoaded) {
+            final CacheManager that=this;
+            pendingCache.put(cacheId, bid);
+            dfpWebCache.setWebViewClient(new WebViewClient() {
+                @Override
+                public void onPageFinished(WebView view, String url) {
+                    webViewLoaded = true;
+                    for(Map.Entry<String, String> x : pendingCache.entrySet()){
+                        Handler handler = new Handler(Looper.getMainLooper());
+                        handler.postAtFrontOfQueue(new SaveCacheForWebRunnable(that, x.getKey(), x.getValue()));
+                    }
+                }
+            });
+        }else {
+            Handler handler = new Handler(Looper.getMainLooper());
+            handler.postAtFrontOfQueue(new SaveCacheForWebRunnable(this, cacheId, bid));
+        }
     }
 
     private void setupSDKCache() {
@@ -165,7 +184,7 @@ public class CacheManager {
 
         @Override
         public void run() {
-            CacheManager cacheManager = cacheManagerWeakRef.get();
+            final CacheManager cacheManager = cacheManagerWeakRef.get();
             if (cacheManager == null) {
                 return;
             }
@@ -183,6 +202,12 @@ public class CacheManager {
                     webSettings.setJavaScriptEnabled(true);
                 }
                 cacheManager.dfpWebCache.loadDataWithBaseURL("https://pubads.g.doubleclick.net", "<html></html>", "text/html", null, null);
+                cacheManager.dfpWebCache.setWebViewClient(new WebViewClient() {
+                                                              @Override
+                                                              public void onPageFinished(WebView view, String url) {
+                                                                  cacheManager.webViewLoaded = true;
+                                                              }
+                                                          });
                 //cacheManager.dfpWebCache.addJavascriptInterface(new JavaScriptInterface(), "confirmer");
                 CacheManager.setupBidCleanUpRunnable();
             } catch (Throwable t) {
