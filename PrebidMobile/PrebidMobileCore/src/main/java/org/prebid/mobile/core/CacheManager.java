@@ -201,13 +201,14 @@ public class CacheManager {
                     webSettings.setDomStorageEnabled(true);
                     webSettings.setJavaScriptEnabled(true);
                 }
-                cacheManager.dfpWebCache.loadDataWithBaseURL("https://pubads.g.doubleclick.net", "<html></html>", "text/html", null, null);
                 cacheManager.dfpWebCache.setWebViewClient(new WebViewClient() {
-                                                              @Override
-                                                              public void onPageFinished(WebView view, String url) {
-                                                                  cacheManager.webViewLoaded = true;
-                                                              }
-                                                          });
+                    @Override
+                    public void onPageFinished(WebView view, String url) {
+                        cacheManager.webViewLoaded = true;
+                    }
+                });
+                cacheManager.dfpWebCache.loadDataWithBaseURL("https://pubads.g.doubleclick.net", "<html></html>", "text/html", null, null);
+
                 //cacheManager.dfpWebCache.addJavascriptInterface(new JavaScriptInterface(), "confirmer");
                 CacheManager.setupBidCleanUpRunnable();
             } catch (Throwable t) {
