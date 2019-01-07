@@ -86,7 +86,7 @@ public class PrebidApplication extends Application {
         // Register ad units for prebid.
         try {
             // Start the initialization with DFP ad
-            Prebid.shouldLoadOverSecureConnection(false);
+            //Prebid.shouldLoadOverSecureConnection(false);
             /*Prebid.init(getApplicationContext(), adUnits, PBS_ACCOUNT_ID, Prebid.AdServer.DFP, Prebid.Host.ADSOLUTIONS_DEV,
                     new AppEventListener() {
                         @Override

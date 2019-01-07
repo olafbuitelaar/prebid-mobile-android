@@ -245,7 +245,7 @@ public class PrebidServerAdapter implements DemandAdapter, ServerConnector.Serve
                 //TODO: optimze
                 //      assume all adunits have the same bidders!
                 try {
-                    if (response.has("ext") && response.getJSONObject("ext").has("responsetimemillis")) {
+                    if (response != null && response.has("ext") && response.getJSONObject("ext").has("responsetimemillis")) {
                         if (results != null && !results.isEmpty()) {
                             JSONObject bidders = response.getJSONObject("ext").getJSONObject("responsetimemillis");
                             Iterator<String> bidderNames = bidders.keys();
@@ -363,7 +363,7 @@ public class PrebidServerAdapter implements DemandAdapter, ServerConnector.Serve
             if (ext != null && ext.length() > 0) {
                 postData.put("ext", ext);
             }
-            postData.put("test", 1);
+            //postData.put("test", 1);
         } catch (JSONException e) {
         }
         return postData;
@@ -379,10 +379,10 @@ public class PrebidServerAdapter implements DemandAdapter, ServerConnector.Serve
                 cache.put("bids", bids);
                 prebid.put("cache", cache);
             }
-            JSONObject aliases = new JSONObject();
+            /*JSONObject aliases = new JSONObject();
             aliases.put("appnexus2", "appnexus");
             aliases.put("appnexus3", "appnexus");
-            prebid.put("aliases", aliases);
+            prebid.put("aliases", aliases);*/
             JSONObject storedRequest = new JSONObject();
             storedRequest.put("id", Prebid.getAccountId());
             //prebid.put("storedrequest", storedRequest);
