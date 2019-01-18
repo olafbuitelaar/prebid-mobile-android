@@ -47,7 +47,7 @@ public class LineItemEventListener extends AdListener {
         super.onAdLoaded();
         LogUtil.d("DPF-Banner", "onAdLoaded");
         Prebid.markAdUnitLoaded(this.adView);
-        Prebid.gatherStats();//tODO find a good location to trigger this
+        //Prebid.gatherStats();//tODO find a good location to trigger this
     }
 
 

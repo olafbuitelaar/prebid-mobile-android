@@ -165,7 +165,10 @@ public class PrebidServerAdapter implements DemandAdapter, ServerConnector.Serve
                                         BidResponse newBid = null;
                                         JSONObject targetingKeywords = bid.getJSONObject("ext").getJSONObject("prebid").getJSONObject("targeting");
                                         if (Prebid.useLocalCache()) {
-                                            String format = targetingKeywords.getString("hb_creative_loadtype");
+                                            String format = "html";
+                                            if(targetingKeywords.has("hb_creative_loadtype")){
+                                                    format = targetingKeywords.getString("hb_creative_loadtype");
+                                            }
                                             String cacheId = CacheManager.getCacheManager().saveCache(bid.toString(), format);
                                             newBid = new BidResponse(bidPrice, cacheId);
                                             newBid.setBidderCode(bidderName);

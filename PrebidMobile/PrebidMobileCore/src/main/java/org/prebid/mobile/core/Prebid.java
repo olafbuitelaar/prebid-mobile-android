@@ -625,7 +625,7 @@ public class Prebid {
         sizeDict.put("timeToLoad", adunit.getTimeToLoad());
 
         String adunitId = (String) callMethodOnObject(placement.adView, "getAdUnitId");
-        adunitId = adunitId.replaceFirst("^/\\d+/","");
+        adunitId = adunitId.replaceFirst("^/","");
         //if(adunitId.charAt(0) != '/'){
             //adunitId = "/"+adunitId;
         //}
