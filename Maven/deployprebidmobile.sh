@@ -25,7 +25,7 @@ echoX "Deploying Prebid Mobile SDK on Maven..."
 #######
 # Deploy
 #######
-mvn gpg:sign-and-deploy-file "-DpomFile=pom.xml" "-Dfile=PrebidMobile.jar" "-DrepositoryId=ossrh" "-Durl=https://oss.sonatype.org/service/local/staging/deploy/maven2/" "-DstagingRepositoryId=ossrh" "-Dsources=PrebidMobile-sources.jar" "-Djavadoc=PrebidMobile-javadoc.jar" || { echoX "Deploy failed!"; echoX "End Script"; exit 1; } 
+mvn gpg:sign-and-deploy-file -s settings.xml "-DpomFile=pom.xml" "-Dfile=PrebidMobile.jar" "-DrepositoryId=ossrh" "-Durl=https://oss.sonatype.org/service/local/staging/deploy/maven2/" "-DstagingRepositoryId=ossrh" "-Dsources=PrebidMobile-sources.jar" "-Djavadoc=PrebidMobile-javadoc.jar" || { echoX "Deploy failed!"; echoX "End Script"; exit 1; } 
 
 
 

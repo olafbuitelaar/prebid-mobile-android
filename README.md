@@ -2,14 +2,14 @@
 
 # Prebid Mobile Android SDK
 
-Get started with Prebid Mobile by creating a Prebid Server account [here](http://prebid.org/prebid-mobile/prebid-mobile-pbs.html)
+Get started with Prebid Mobile by requesting an Adsolutions Prebid Server account [here](https://www.adsolutions.com)
 
 ## Use Maven?
 
-Easily include the Prebid Mobile SDK using Maven. Simply add this line to your gradle dependencies:
+Easily include the Adsolutions Prebid Mobile SDK using Maven. Simply add this line to your gradle dependencies:
 
 ```
-compile 'org.prebid:prebid-mobile-sdk:[0,1)'
+implementation 'com.adsolutions:adsolutions-prebid-mobile-sdk:0.5.3'
 ```
 
 
