@@ -122,6 +122,9 @@ class PrebidServerAdapter implements DemandAdapter {
             super.onPreExecute();
 
             timeoutCountDownTimer.start();
+
+
+
         }
 
         @Override
@@ -171,6 +174,9 @@ class PrebidServerAdapter implements DemandAdapter {
                     LogUtil.d("Correct response retrieved: " + response.toString());
                     httpCookieSync(conn.getHeaderFields());
                     // in the future, this can be improved to parse response base on request versions
+
+
+
                     if (!PrebidMobile.timeoutMillisUpdated) {
                         int tmaxRequest = -1;
                         try {
@@ -183,6 +189,9 @@ class PrebidServerAdapter implements DemandAdapter {
                             PrebidMobile.timeoutMillisUpdated = true;
                         }
                     }
+
+
+
                     return new AsyncTaskResult<>(response);
                 } else if (httpResult == HttpURLConnection.HTTP_BAD_REQUEST) {
                     StringBuilder builder = new StringBuilder();
@@ -204,6 +213,8 @@ class PrebidServerAdapter implements DemandAdapter {
                     Matcher m2 = invalidBannerSize.matcher(result);
                     Matcher m3 = storedImpNotFound.matcher(result);
                     Matcher m4 = invalidInterstitialSize.matcher(result);
+
+
                     if (m.find() || result.contains("No stored request")) {
                         return new AsyncTaskResult<>(ResultCode.INVALID_ACCOUNT_ID);
                     } else if (m3.find() || result.contains("No stored imp")) {
@@ -377,6 +388,11 @@ class PrebidServerAdapter implements DemandAdapter {
         protected void onCancelled() {
             super.onCancelled();
 
+
+            LogUtil.d("onCancelled fired");
+
+
+
             if (timeoutFired) {
                 notifyDemandFailed(ResultCode.TIMEOUT);
             } else {
@@ -398,6 +414,7 @@ class PrebidServerAdapter implements DemandAdapter {
         String getAuctionId() {
             return auctionId;
         }
+
 
         void destroy() {
             this.cancel(true);

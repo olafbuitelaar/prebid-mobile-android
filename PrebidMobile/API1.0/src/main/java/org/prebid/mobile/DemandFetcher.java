@@ -21,6 +21,7 @@ import android.os.HandlerThread;
 import android.support.annotation.MainThread;
 import android.support.annotation.NonNull;
 import android.support.annotation.VisibleForTesting;
+import android.util.Log;
 
 import java.util.HashMap;
 import java.util.UUID;
@@ -176,6 +177,7 @@ class DemandFetcher {
                         @Override
                         @MainThread
                         public void onDemandReady(final HashMap<String, String> demand, String auctionId) {
+                            Log.d("DemandUtil","onDemandReady: " + demand.toString());
                             if (RequestRunnable.this.auctionId.equals(auctionId)) {
                                 Util.apply(demand, DemandFetcher.this.adObject);
                                 LogUtil.i("Successfully set the following keywords: " + demand.toString());
@@ -186,6 +188,7 @@ class DemandFetcher {
                         @Override
                         @MainThread
                         public void onDemandFailed(ResultCode resultCode, String auctionId) {
+                            Log.d("DemandUtil","onDemandFailed: " + resultCode.toString());
                             if (RequestRunnable.this.auctionId.equals(auctionId)) {
                                 Util.apply(null, DemandFetcher.this.adObject);
                                 LogUtil.i("Removed all used keywords from the ad object");
