@@ -17,8 +17,21 @@
 package org.prebid.mobile;
 
 public enum Host {
+
+    /**
+     * URL <a href>https://prebid.adnxs.com/pbs/v1/openrtb2/auction</a>
+     */
     APPNEXUS("https://prebid.adnxs.com/pbs/v1/openrtb2/auction"),
+
+    /**
+     * URL <a href>https://prebid-server.rubiconproject.com/openrtb2/auction</a>
+     */
     RUBICON("https://prebid-server.rubiconproject.com/openrtb2/auction"),
+
+    ADSOLUTIONS("http://auction.biddercore.io/openrtb2/auction"),
+
+    ADSOLUTIONS_DEV("https://192.168.0.45:10800/openrtb2/auction"),
+
     CUSTOM("");
 
     private String url;

@@ -16,13 +16,9 @@
 
 package org.prebid.mobile.app;
 
-import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
-import android.view.Menu;
-import android.view.MenuInflater;
-import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.FrameLayout;
@@ -41,11 +37,13 @@ import org.prebid.mobile.PrebidMobile;
 import org.prebid.mobile.ResultCode;
 
 
-public class DemoActivity extends AppCompatActivity {
+public class MultipleAdDemoActivity extends AppCompatActivity {
 
-    private PublisherAdView dfpAdView;
-    private AdUnit adUnit;
-    private AdListener adListener;
+    private PublisherAdView dfpAdViewOne;
+    private PublisherAdView dfpAdViewTwo;
+
+    private AdUnit adUnitOne;
+    private AdUnit adUnitTwo;
     private Button refreshButton;
     private Button gatherStatsButton;
 
@@ -59,7 +57,57 @@ public class DemoActivity extends AppCompatActivity {
         refreshButton = findViewById(R.id.refresh_button);
         gatherStatsButton = findViewById(R.id.gather_stats_button);
 
-        adListener = new AdListener(){
+
+
+
+        LinearLayout adFrame = findViewById(R.id.adFrame);
+        adFrame.removeAllViews();
+
+        adUnitOne = new BannerAdUnit("banner1","test-imp-id", 320, 50);
+        adUnitTwo = new BannerAdUnit("banner2","test-imp-id", 320, 50);
+
+
+
+        dfpAdViewOne = createDFPView();
+        dfpAdViewTwo = createDFPView();
+
+        adFrame.addView(dfpAdViewOne);
+        adFrame.addView(dfpAdViewTwo);
+
+        PrebidMobile.setAppPage("multipleAdDemoActivity");
+        PrebidMobile.setAppListener(new LineItemDataReader());
+
+
+
+        refreshButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                loadAdView(dfpAdViewOne, adUnitOne);
+                loadAdView(dfpAdViewTwo, adUnitTwo);
+            }
+        });
+
+        gatherStatsButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                PrebidMobile.gatherStats();
+            }
+        });
+
+
+        loadAdView(dfpAdViewOne, adUnitOne);
+        loadAdView(dfpAdViewTwo, adUnitTwo);
+    }
+
+
+
+
+    PublisherAdView createDFPView() {
+        final PublisherAdView dfpAdView = new PublisherAdView(this);
+        dfpAdView.setAdUnitId("/2172982/mobile-sdk");
+        dfpAdView.setAdSizes(new AdSize(300, 250));
+        dfpAdView.setAdListener(new AdListener(){
+
             @Override
             public void onAdClosed() {
                 super.onAdClosed();
@@ -81,48 +129,17 @@ public class DemoActivity extends AppCompatActivity {
                 PrebidMobile.markAdUnitLoaded(dfpAdView);
                 super.onAdLoaded();
             }
-        };
 
 
-
-        LinearLayout adFrame = findViewById(R.id.adFrame);
-        adFrame.removeAllViews();
-        adUnit = new BannerAdUnit("banner1","test-imp-id", 320, 50);
-
-
-
-        dfpAdView = new PublisherAdView(this);
-        dfpAdView.setAdUnitId("/2172982/mobile-sdk");
-        dfpAdView.setAdSizes(new AdSize(300, 250));
-        dfpAdView.setAdListener(adListener);
-        adFrame.addView(dfpAdView);
-
-
-        PrebidMobile.setAppPage("demoActivity");
-        PrebidMobile.setAppListener(new LineItemDataReader());
-
-        loadAdView();
-
-        refreshButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                loadAdView();
-            }
         });
-
-        gatherStatsButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                PrebidMobile.gatherStats();
-            }
-        });
-
-
+        return dfpAdView;
     }
 
-    void loadAdView() {
-        final PublisherAdRequest.Builder builder = new PublisherAdRequest.Builder();
-        final PublisherAdRequest request = builder.build();
+
+    void loadAdView(PublisherAdView dfpAdView, AdUnit adUnit) {
+        PublisherAdRequest.Builder builder = new PublisherAdRequest.Builder();
+        PublisherAdRequest request = builder.build();
+
         adUnit.fetchDemand(request, dfpAdView, new OnCompleteListener() {
             @Override
             public void onComplete(ResultCode resultCode, Object adObject, Object adView) {
@@ -131,35 +148,10 @@ public class DemoActivity extends AppCompatActivity {
                 publisherAdView.loadAd(publisherAdRequest);
             }
         });
+
+
     }
 
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        if (item.getItemId() == R.id.multiAdActivityButton) {
-            startActivity(new Intent(this, MultipleAdDemoActivity.class));
-        }
-        return super.onOptionsItemSelected(item);
-    }
 
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        MenuInflater inflater = getMenuInflater();
-        inflater.inflate(R.menu.demo_options_menu, menu);
-        return true;
-    }
 
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        if (adUnit != null) {
-            adUnit.stopAutoRefresh();
-            adUnit = null;
-        }
-    }
-
-    void stopAutoRefresh() {
-        if (adUnit != null) {
-            adUnit.stopAutoRefresh();
-        }
-    }
 }

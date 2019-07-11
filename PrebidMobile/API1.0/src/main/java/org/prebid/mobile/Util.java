@@ -18,6 +18,7 @@ package org.prebid.mobile;
 
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.util.Log;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -203,6 +204,7 @@ class Util {
                 || adObj.getClass() == getClassFromString(MOPUB_INTERSTITIAL_CLASS)) {
             handleMoPubKeywordsUpdate(bids, adObj);
         } else if (adObj.getClass() == getClassFromString(DFP_AD_REQUEST_CLASS)) {
+
             handleDFPCustomTargetingUpdate(bids, adObj);
         }
     }

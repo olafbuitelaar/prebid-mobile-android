@@ -21,15 +21,14 @@
         <meta-data
             android:name="com.google.android.gms.ads.AD_MANAGER_APP"
             android:value="true"/>
-        <activity android:name=".MainActivity">
+        <activity android:name=".DemoActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".DemoActivity" />
-        <activity android:name=".TestActivity" />
+        <activity android:name=".MultipleAdDemoActivity"></activity>
         <!--MoPub Activities-->
         <activity
             android:name="com.mopub.mobileads.MoPubActivity"
