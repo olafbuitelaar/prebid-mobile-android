@@ -18,9 +18,10 @@ package org.prebid.mobile;
 
 import android.os.Handler;
 import android.os.HandlerThread;
-import android.os.Looper;
+import android.support.annotation.MainThread;
 import android.support.annotation.NonNull;
 import android.support.annotation.VisibleForTesting;
+import android.util.Log;
 
 import java.util.HashMap;
 import java.util.UUID;
@@ -36,6 +37,7 @@ class DemandFetcher {
     private STATE state;
     private int periodMillis;
     private Object adObject;
+    private Object adView;
     private OnCompleteListener listener;
     private Handler fetcherHandler;
     private RequestRunnable requestRunnable;
@@ -43,10 +45,11 @@ class DemandFetcher {
     private long timePausedAt = -1;
     private RequestParams requestParams;
 
-    DemandFetcher(@NonNull Object adObj) {
+    DemandFetcher(@NonNull Object adObj, @NonNull Object adView) {
         this.state = STATE.STOPPED;
         this.periodMillis = 0;
         this.adObject = adObj;
+        this.adView = adView;
         HandlerThread fetcherThread = new HandlerThread("FetcherThread");
         fetcherThread.start();
         this.fetcherHandler = new Handler(fetcherThread.getLooper());
@@ -122,17 +125,18 @@ class DemandFetcher {
         }
     }
 
+    @MainThread
     private void notifyListener(final ResultCode resultCode) {
-        if (listener != null) {
-            final OnCompleteListener listenerFinal = listener;
-            Handler uiThread = new Handler(Looper.getMainLooper());
-            uiThread.post(new Runnable() {
-                @Override
-                public void run() {
-                    listenerFinal.onComplete(resultCode);
 
-                }
-            });
+
+
+        AdUnitBidMap adUnitBidMap = PrebidMobile.getAdunitMapByAdView(adView);
+        AdUnit adUnit = PrebidMobile.getAdUnitByCode(adUnitBidMap.adUnitCode);
+        adUnit.startLoadTime = System.currentTimeMillis();
+
+
+        if (listener != null) {
+            listener.onComplete(resultCode, adObject, adView);
         }
         // for single request, if done, finish current fetcher,
         // let ad unit create a new fetcher for next request
@@ -143,7 +147,6 @@ class DemandFetcher {
 
     class RequestRunnable implements Runnable {
         private DemandAdapter demandAdapter;
-        private boolean finished = false;
         private String auctionId;
         private Handler demandHandler;
 
@@ -152,7 +155,7 @@ class DemandFetcher {
             HandlerThread demandThread = new HandlerThread("DemandThread");
             demandThread.start();
             this.demandHandler = new Handler(demandThread.getLooper());
-            this.demandAdapter = new PrebidServerAdapter();
+            this.demandAdapter = new PrebidServerAdapter(PrebidMobile.getAdUnitByCode(PrebidMobile.getAdunitMapByAdView(adView).adUnitCode));
             auctionId = UUID.randomUUID().toString();
         }
 
@@ -164,49 +167,39 @@ class DemandFetcher {
         public void run() {
             // reset state
             auctionId = UUID.randomUUID().toString();
-            finished = false;
             lastFetchTime = System.currentTimeMillis();
             // check input values
             demandHandler.post(new Runnable() {
-                final String auctionIdFinal = auctionId;
 
                 @Override
                 public void run() {
                     demandAdapter.requestDemand(requestParams, new DemandAdapter.DemandAdapterListener() {
                         @Override
+                        @MainThread
                         public void onDemandReady(final HashMap<String, String> demand, String auctionId) {
-                            if (!finished && RequestRunnable.this.auctionId.equals(auctionId)) {
+                            Log.d("DemandUtil","onDemandReady: " + demand.toString());
+                            if (RequestRunnable.this.auctionId.equals(auctionId)) {
                                 Util.apply(demand, DemandFetcher.this.adObject);
                                 LogUtil.i("Successfully set the following keywords: " + demand.toString());
                                 notifyListener(ResultCode.SUCCESS);
-                                finished = true;
                             }
                         }
 
                         @Override
+                        @MainThread
                         public void onDemandFailed(ResultCode resultCode, String auctionId) {
-                            if (!finished && RequestRunnable.this.auctionId.equals(auctionId)) {
+                            Log.d("DemandUtil","onDemandFailed: " + resultCode.toString());
+                            if (RequestRunnable.this.auctionId.equals(auctionId)) {
                                 Util.apply(null, DemandFetcher.this.adObject);
                                 LogUtil.i("Removed all used keywords from the ad object");
                                 notifyListener(resultCode);
-                                finished = true;
                             }
                         }
-                    }, auctionIdFinal);
+                    }, auctionId);
                 }
             });
             if (periodMillis > 0) {
                 fetcherHandler.postDelayed(this, periodMillis);
-            }
-            while (!finished && !testMode) {
-                long currentTime = System.currentTimeMillis();
-                if (currentTime - lastFetchTime >= PrebidMobile.timeoutMillis) {
-                    finished = true;
-                    notifyListener(ResultCode.TIMEOUT);
-                }
-                if (Thread.interrupted()) {
-                    return;
-                }
             }
         }
     }
@@ -221,13 +214,6 @@ class DemandFetcher {
     Handler getDemandHandler() {
         RequestRunnable runnable = this.requestRunnable;
         return runnable.demandHandler;
-    }
-
-    private boolean testMode = false;
-
-    @VisibleForTesting
-    void enableTestMode() {
-        this.testMode = true;
     }
     //endregion
 }

@@ -19,7 +19,7 @@ package org.prebid.mobile;
 import android.support.annotation.NonNull;
 
 public class InterstitialAdUnit extends AdUnit {
-    public InterstitialAdUnit(@NonNull String configId) {
-        super(configId, AdType.INTERSTITIAL);
+    public InterstitialAdUnit(@NonNull String code, @NonNull String configId) {
+        super(code, configId, AdType.INTERSTITIAL);
     }
 }
