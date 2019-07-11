@@ -25,12 +25,15 @@ import android.net.NetworkInfo;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.CountDownTimer;
+import android.os.Handler;
+import android.os.Looper;
 import android.support.annotation.MainThread;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.annotation.WorkerThread;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
+import android.util.Log;
 import android.webkit.CookieManager;
 import android.webkit.CookieSyncManager;
 
@@ -50,6 +53,7 @@ import java.net.MalformedURLException;
 import java.net.SocketTimeoutException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -61,9 +65,11 @@ import java.util.regex.Pattern;
 
 class PrebidServerAdapter implements DemandAdapter {
     private ArrayList<ServerConnector> serverConnectors;
+    private AdUnit adUnit;
 
-    PrebidServerAdapter() {
+    PrebidServerAdapter(AdUnit adUnit) {
         serverConnectors = new ArrayList<>();
+        this.adUnit = adUnit;
     }
 
     @Override
@@ -94,14 +100,19 @@ class PrebidServerAdapter implements DemandAdapter {
 
         private final RequestParams requestParams;
         private final String auctionId;
+        private final AdUnit adUnit;
 
         private DemandAdapterListener listener;
         private boolean timeoutFired;
+
+        private HashMap<String, String> keywords = new HashMap<>();
+        private boolean containTopBid = false;
 
         ServerConnector(PrebidServerAdapter prebidServerAdapter, DemandAdapterListener listener, RequestParams requestParams, String auctionId) {
             this.prebidServerAdapter = new WeakReference<>(prebidServerAdapter);
             this.listener = listener;
             this.requestParams = requestParams;
+            this.adUnit = prebidServerAdapter.adUnit;
             this.auctionId = auctionId;
             timeoutCountDownTimer = new TimeoutCountDownTimer(PrebidMobile.timeoutMillis, TIMEOUT_COUNT_DOWN_INTERVAL);
         }
@@ -111,6 +122,9 @@ class PrebidServerAdapter implements DemandAdapter {
             super.onPreExecute();
 
             timeoutCountDownTimer.start();
+
+
+
         }
 
         @Override
@@ -131,10 +145,9 @@ class PrebidServerAdapter implements DemandAdapter {
 
                 conn.setRequestMethod("POST");
                 conn.setConnectTimeout(PrebidMobile.timeoutMillis);
-
-                // Add post data
-                OutputStreamWriter wr = new OutputStreamWriter(conn.getOutputStream(), "UTF-8");
                 JSONObject postData = getPostData();
+                LogUtil.d("Before sending request for auction " + auctionId + " to url "  + getHost() + " with post data: " + postData.toString());
+                OutputStreamWriter wr = new OutputStreamWriter(conn.getOutputStream(), "UTF-8");
                 LogUtil.d("Sending request for auction " + auctionId + " with post data: " + postData.toString());
                 wr.write(postData.toString());
                 wr.flush();
@@ -144,6 +157,7 @@ class PrebidServerAdapter implements DemandAdapter {
 
                 // Read request response
                 int httpResult = conn.getResponseCode();
+                LogUtil.d("httpresult is " + httpResult);
                 long demandFetchEndTime = System.currentTimeMillis();
                 if (httpResult == HttpURLConnection.HTTP_OK) {
                     StringBuilder builder = new StringBuilder();
@@ -157,8 +171,12 @@ class PrebidServerAdapter implements DemandAdapter {
                     is.close();
                     String result = builder.toString();
                     JSONObject response = new JSONObject(result);
+                    LogUtil.d("Correct response retrieved: " + response.toString());
                     httpCookieSync(conn.getHeaderFields());
                     // in the future, this can be improved to parse response base on request versions
+
+
+
                     if (!PrebidMobile.timeoutMillisUpdated) {
                         int tmaxRequest = -1;
                         try {
@@ -171,6 +189,9 @@ class PrebidServerAdapter implements DemandAdapter {
                             PrebidMobile.timeoutMillisUpdated = true;
                         }
                     }
+
+
+
                     return new AsyncTaskResult<>(response);
                 } else if (httpResult == HttpURLConnection.HTTP_BAD_REQUEST) {
                     StringBuilder builder = new StringBuilder();
@@ -192,6 +213,8 @@ class PrebidServerAdapter implements DemandAdapter {
                     Matcher m2 = invalidBannerSize.matcher(result);
                     Matcher m3 = storedImpNotFound.matcher(result);
                     Matcher m4 = invalidInterstitialSize.matcher(result);
+
+
                     if (m.find() || result.contains("No stored request")) {
                         return new AsyncTaskResult<>(ResultCode.INVALID_ACCOUNT_ID);
                     } else if (m3.find() || result.contains("No stored imp")) {
@@ -242,8 +265,7 @@ class PrebidServerAdapter implements DemandAdapter {
 
             JSONObject jsonObject = asyncTaskResult.getResult();
 
-            HashMap<String, String> keywords = new HashMap<>();
-            boolean containTopBid = false;
+            ArrayList<BidResponse> bidResponses = new ArrayList<>();
             if (jsonObject != null) {
                 LogUtil.d("Getting response for auction " + getAuctionId() + ": " + jsonObject.toString());
                 try {
@@ -251,10 +273,19 @@ class PrebidServerAdapter implements DemandAdapter {
                     if (seatbid != null) {
                         for (int i = 0; i < seatbid.length(); i++) {
                             JSONObject seat = seatbid.getJSONObject(i);
+                            String bidderName = seat.getString("seat");
+                            int responseTime = 0;
+                            if(jsonObject.has("ext") && jsonObject.getJSONObject("ext").has("responsetimemillis") && jsonObject.getJSONObject("ext").getJSONObject("responsetimemillis").has(bidderName)){
+                                responseTime = jsonObject.getJSONObject("ext").getJSONObject("responsetimemillis").getInt(bidderName);
+                            }
                             JSONArray bids = seat.getJSONArray("bid");
                             if (bids != null) {
                                 for (int j = 0; j < bids.length(); j++) {
                                     JSONObject bid = bids.getJSONObject(j);
+                                    BidResponse bidResponse = new BidResponse(bid);
+                                    bidResponse.setBidderCode(bidderName);
+
+
                                     JSONObject hb_key_values = null;
                                     try {
                                         hb_key_values = bid.getJSONObject("ext").getJSONObject("prebid").getJSONObject("targeting");
@@ -281,28 +312,86 @@ class PrebidServerAdapter implements DemandAdapter {
                                             }
                                         }
                                     }
+
+
+                                    if (bid.has("dealId")) {
+                                        bidResponse.dealId = bid.getString("dealId");
+                                    }
+
+                                    Iterator<?> keys = bidResponse.targetingKeywords.keys();
+                                    while (keys.hasNext()) {
+                                        String key = (String) keys.next();
+                                        bidResponse.addCustomKeyword(key, bidResponse.targetingKeywords.getString(key));
+                                    }
+
+                                    String cacheIdKey = "hb_cache_id_" + bidderName;
+                                    cacheIdKey = cacheIdKey.substring(0, Math.min(cacheIdKey.length(), 20));
+                                    bidResponse.addCustomKeyword(cacheIdKey, bidResponse.getCreative());
+                                    bidResponse.setResponseTime(responseTime);
+                                    bidResponses.add(bidResponse);
+
+
                                 }
+
                             }
+
+
+
                         }
+
+
+                        HashMap<String, String> winnerKeywords = BidResponse.getWinnerKeywords(bidResponses);
+                        keywords.putAll(winnerKeywords);
+                        PrebidMobile.setBidResponsesForAdUnit(adUnit, bidResponses);
+
                     }
                 } catch (JSONException e) {
                     LogUtil.e("Error processing JSON response.");
                 }
+
             }
 
+
             if (!keywords.isEmpty() && containTopBid) {
-                notifyDemandReady(keywords);
+
+
+                CacheManager.getCacheManager().saveBidResponses(bidResponses, new CacheManager.CacheListener() {
+                    @Override
+                    public void cacheSaved() {
+
+                        new Handler(Looper.getMainLooper()).post(new Runnable() {
+                            @Override
+                            public void run() {
+                                notifyDemandReady(keywords);
+                            }
+                        });
+
+                    }
+                });
+
+
             } else {
                 notifyDemandFailed(ResultCode.NO_BIDS);
             }
 
-            removeThisTask();
+
+
+
+
+
         }
+
+
 
         @Override
         @MainThread
         protected void onCancelled() {
             super.onCancelled();
+
+
+            LogUtil.d("onCancelled fired");
+
+
 
             if (timeoutFired) {
                 notifyDemandFailed(ResultCode.TIMEOUT);
@@ -325,6 +414,7 @@ class PrebidServerAdapter implements DemandAdapter {
         String getAuctionId() {
             return auctionId;
         }
+
 
         void destroy() {
             this.cancel(true);
@@ -431,6 +521,7 @@ class PrebidServerAdapter implements DemandAdapter {
             }
             JSONObject postData = new JSONObject();
             try {
+                postData.put("test", 1);
                 String id = UUID.randomUUID().toString();
                 postData.put("id", id);
                 JSONObject source = new JSONObject();
@@ -480,7 +571,7 @@ class PrebidServerAdapter implements DemandAdapter {
                 cache.put("bids", bids);
                 prebid.put("cache", cache);
                 JSONObject storedRequest = new JSONObject();
-                storedRequest.put("id", PrebidMobile.getPrebidServerAccountId());
+                //storedRequest.put("id", PrebidMobile.getPrebidServerAccountId());
                 prebid.put("storedrequest", storedRequest);
                 JSONObject targetingEmpty = new JSONObject();
                 prebid.put("targeting", targetingEmpty);

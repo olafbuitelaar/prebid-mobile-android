@@ -24,5 +24,5 @@ public interface OnCompleteListener {
      * @param resultCode see object class definition for details
      */
     @MainThread
-    void onComplete(ResultCode resultCode);
+    void onComplete(ResultCode resultCode, Object adObject, Object adView);
 }

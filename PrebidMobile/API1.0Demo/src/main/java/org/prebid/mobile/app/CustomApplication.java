@@ -45,12 +45,12 @@ public class CustomApplication extends Application {
                 .withNetworksToInit(networksToInit)
                 .build();
         MoPub.initializeSdk(this, sdkConfiguration, null);
-        //set Prebid Mobile global Settings
-        //region PrebidMobile API
-        PrebidMobile.setPrebidServerAccountId(Constants.PBS_ACCOUNT_ID);
-        PrebidMobile.setPrebidServerHost(Host.APPNEXUS);
+        PrebidMobile.setPrebidServerAccountId("0");
+        PrebidMobile.setPrebidServerHost(Host.ADSOLUTIONS);
+        PrebidMobile.setAppName("prebidmobile-demo");
         PrebidMobile.setShareGeoLocation(true);
         PrebidMobile.setApplicationContext(getApplicationContext());
+        PrebidMobile.initCacheManager();
         //endregion
         if (BuildConfig.DEBUG) {
             sendBroadcast(new Intent(Intent.ACTION_CLOSE_SYSTEM_DIALOGS));
