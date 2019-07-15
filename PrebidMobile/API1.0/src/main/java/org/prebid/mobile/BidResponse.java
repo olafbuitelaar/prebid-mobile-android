@@ -223,7 +223,12 @@ public class BidResponse {
     public static HashMap<String, String> getWinnerKeywords(List<BidResponse> bidResponses) {
         Collections.sort(bidResponses, compareBids);
         HashMap<String, String> keywordsPairs = new HashMap<>();
-        BidResponse winner = bidResponses.get(0);
+
+        BidResponse winner = null;
+        if (!bidResponses.isEmpty()) {
+            winner = bidResponses.get(0);
+        }
+
         if (winner != null && winner.getCpm() > 0) {
             String prefix = "pb_";
             keywordsPairs.put(prefix + "winner", winner.getBidderCode());
