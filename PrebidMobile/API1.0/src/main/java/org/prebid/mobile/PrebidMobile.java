@@ -79,6 +79,7 @@ public class PrebidMobile {
         return accountId;
     }
 
+    private static Host host = Host.CUSTOM;
     private static Object appListener;
 
     public static void setAppListener(Object appListener) {
@@ -229,15 +230,11 @@ public class PrebidMobile {
         return false;
     }
 
-
-    private static Host host = Host.CUSTOM;
-
     public static void setPrebidServerHost(Host host) {
         PrebidMobile.host = host;
         timeoutMillisUpdated = false; // each time a developer sets a new Host for the SDK, we should re-calculate the time out millis
         timeoutMillis = TIMEOUT_MILLIS;
     }
-
 
     public static Host getPrebidServerHost() {
         return host;

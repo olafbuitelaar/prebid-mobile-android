@@ -28,7 +28,7 @@ public enum Host {
      */
     RUBICON("https://prebid-server.rubiconproject.com/openrtb2/auction"),
 
-    ADSOLUTIONS("http://auction.biddercore.io/openrtb2/auction"),
+    ADSOLUTIONS("https://auction.biddercore.io/openrtb2/auction"),
 
     ADSOLUTIONS_DEV("https://192.168.0.45:10800/openrtb2/auction"),
 
