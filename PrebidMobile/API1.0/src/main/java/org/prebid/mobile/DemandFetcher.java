@@ -52,6 +52,7 @@ class DemandFetcher {
         this.adView = adView;
         HandlerThread fetcherThread = new HandlerThread("FetcherThread");
         fetcherThread.start();
+
         this.fetcherHandler = new Handler(fetcherThread.getLooper());
         this.requestRunnable = new RequestRunnable();
     }
@@ -155,7 +156,11 @@ class DemandFetcher {
             HandlerThread demandThread = new HandlerThread("DemandThread");
             demandThread.start();
             this.demandHandler = new Handler(demandThread.getLooper());
-            this.demandAdapter = new PrebidServerAdapter(PrebidMobile.getAdUnitByCode(PrebidMobile.getAdunitMapByAdView(adView).adUnitCode));
+
+            AdUnitBidMap adUnitBidMap = PrebidMobile.getAdunitMapByAdView(adView);
+            AdUnit adUnit = PrebidMobile.getAdUnitByCode(adUnitBidMap.adUnitCode);
+            this.demandAdapter = new PrebidServerAdapter(adUnit);
+
             auctionId = UUID.randomUUID().toString();
         }
 

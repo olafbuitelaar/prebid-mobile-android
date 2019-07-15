@@ -32,7 +32,7 @@ import static junit.framework.Assert.assertEquals;
 public class BannerAdUnitTest {
     @Test
     public void testBannerAdUnitCreation() throws Exception {
-        BannerAdUnit adUnit = new BannerAdUnit("123456", 320, 50);
+        BannerAdUnit adUnit = new BannerAdUnit("dummy", "123456", 320, 50);
         assertEquals(1, adUnit.getSizes().size());
         assertEquals("123456", FieldUtils.readField(adUnit, "configId", true));
         assertEquals(AdType.BANNER, FieldUtils.readField(adUnit, "adType", true));
@@ -41,7 +41,7 @@ public class BannerAdUnitTest {
 
     @Test
     public void testBannerAdUnitAddSize() throws Exception {
-        BannerAdUnit adUnit = new BannerAdUnit("123456", 320, 50);
+        BannerAdUnit adUnit = new BannerAdUnit("dummy", "123456", 320, 50);
         adUnit.addAdditionalSize(300, 250);
         assertEquals(2, adUnit.getSizes().size());
         adUnit.addAdditionalSize(320, 50);
@@ -50,7 +50,7 @@ public class BannerAdUnitTest {
 
     @Test
     public void testSetUserKeyword() throws Exception {
-        BannerAdUnit adUnit = new BannerAdUnit("123456", 320, 50);
+        BannerAdUnit adUnit = new BannerAdUnit("dummy", "123456", 320, 50);
         adUnit.addUserKeyword("key", "value");
         adUnit.addUserKeyword("key1", null);
         @SuppressWarnings("unchecked")
@@ -72,7 +72,7 @@ public class BannerAdUnitTest {
 
     @Test
     public void testSetUserKeywords() throws Exception {
-        BannerAdUnit adUnit = new BannerAdUnit("123456", 320, 50);
+        BannerAdUnit adUnit = new BannerAdUnit("dummy", "123456", 320, 50);
         adUnit.addUserKeyword("key1", "value1");
         String[] values = {"value1", "value2"};
         adUnit.addUserKeywords("key2", values);

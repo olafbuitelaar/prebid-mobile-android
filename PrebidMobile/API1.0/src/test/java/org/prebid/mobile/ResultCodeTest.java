@@ -20,13 +20,16 @@ import android.content.Context;
 import android.net.ConnectivityManager;
 import android.os.Bundle;
 
+import com.google.android.gms.ads.doubleclick.AppEventListener;
 import com.google.android.gms.ads.doubleclick.PublisherAdRequest;
+import com.google.android.gms.ads.doubleclick.PublisherAdView;
 import com.mopub.mobileads.MoPubView;
 
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.prebid.mobile.testutils.BaseSetup;
+import org.prebid.mobile.testutils.MockAppEventListener;
 import org.prebid.mobile.testutils.MockPrebidServerResponses;
 import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
@@ -48,6 +51,7 @@ import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.robolectric.Shadows.shadowOf;
 
 @RunWith(RobolectricTestRunner.class)
@@ -56,6 +60,7 @@ public class ResultCodeTest extends BaseSetup {
     @Test
     public void testInvalidContext() throws Exception {
         if (successfulMockServerStarted) {
+            Object dummyAdView = new Object();
             HttpUrl httpUrl = server.url("/");
             Host.CUSTOM.setHostUrl(httpUrl.toString());
             PrebidMobile.setPrebidServerHost(Host.CUSTOM);
@@ -65,8 +70,8 @@ public class ResultCodeTest extends BaseSetup {
             InterstitialAdUnit adUnit = new InterstitialAdUnit("123456");
             MoPubView testView = new MoPubView(activity);
             OnCompleteListener mockListener = mock(OnCompleteListener.class);
-            adUnit.fetchDemand(testView, mockListener);
-            verify(mockListener).onComplete(ResultCode.INVALID_CONTEXT);
+            adUnit.fetchDemand(testView, dummyAdView, mockListener);
+            verify(mockListener).onComplete(ResultCode.INVALID_CONTEXT, testView, dummyAdView);
         } else {
             assertTrue("Mock server not started", false);
         }
@@ -75,16 +80,17 @@ public class ResultCodeTest extends BaseSetup {
     @Test
     public void testSuccessForMoPub() throws Exception {
         if (successfulMockServerStarted) {
+            Object dummyAdView = new Object();
             HttpUrl httpUrl = server.url("/");
             Host.CUSTOM.setHostUrl(httpUrl.toString());
             PrebidMobile.setPrebidServerHost(Host.CUSTOM);
             PrebidMobile.setApplicationContext(activity.getApplicationContext());
             PrebidMobile.setPrebidServerAccountId("123456");
             server.enqueue(new MockResponse().setResponseCode(200).setBody(MockPrebidServerResponses.oneBidFromAppNexus()));
-            BannerAdUnit adUnit = new BannerAdUnit("123456", 300, 250);
+            BannerAdUnit adUnit = new BannerAdUnit("dummy", "123456", 300, 250);
             MoPubView testView = new MoPubView(activity);
             OnCompleteListener mockListener = mock(OnCompleteListener.class);
-            adUnit.fetchDemand(testView, mockListener);
+            adUnit.fetchDemand(testView, dummyAdView, mockListener);
             DemandFetcher fetcher = (DemandFetcher) FieldUtils.readField(adUnit, "fetcher", true);
             PrebidMobile.timeoutMillis = Integer.MAX_VALUE;
             ShadowLooper fetcherLooper = shadowOf(fetcher.getHandler().getLooper());
@@ -93,7 +99,7 @@ public class ResultCodeTest extends BaseSetup {
             demandLooper.runOneTask();
             Robolectric.flushBackgroundThreadScheduler();
             Robolectric.flushForegroundThreadScheduler();
-            verify(mockListener).onComplete(ResultCode.SUCCESS);
+            verify(mockListener).onComplete(ResultCode.SUCCESS, testView, dummyAdView);
             assertEquals("hb_pb:0.50,hb_env:mobile-app,hb_pb_appnexus:0.50,hb_size:300x250,hb_bidder_appnexus:appnexus,hb_bidder:appnexus,hb_cache_id:df4aba04-5e69-44b8-8608-058ab21600b8,hb_env_appnexus:mobile-app,hb_size_appnexus:300x250,hb_cache_id_appnexus:df4aba04-5e69-44b8-8608-058ab21600b8,", testView.getKeywords());
         } else {
             assertTrue("Mock server not started", false);
@@ -108,11 +114,16 @@ public class ResultCodeTest extends BaseSetup {
             PrebidMobile.setPrebidServerHost(Host.CUSTOM);
             PrebidMobile.setApplicationContext(activity.getApplicationContext());
             PrebidMobile.setPrebidServerAccountId("123456");
+
+            Object dummyAdView = new PublisherAdView(activity);
+            AppEventListener appMockListener = new MockAppEventListener();
+            PrebidMobile.setAppListener(appMockListener);
+
             server.enqueue(new MockResponse().setResponseCode(200).setBody(MockPrebidServerResponses.oneBidFromAppNexus()));
-            BannerAdUnit adUnit = new BannerAdUnit("123456", 300, 250);
+            BannerAdUnit adUnit = new BannerAdUnit("dummy", "123456", 300, 250);
             PublisherAdRequest testRequest = new PublisherAdRequest.Builder().build();
             OnCompleteListener mockListener = mock(OnCompleteListener.class);
-            adUnit.fetchDemand(testRequest, mockListener);
+            adUnit.fetchDemand(testRequest, dummyAdView, mockListener);
             DemandFetcher fetcher = (DemandFetcher) FieldUtils.readField(adUnit, "fetcher", true);
             PrebidMobile.timeoutMillis = Integer.MAX_VALUE;
             ShadowLooper fetcherLooper = shadowOf(fetcher.getHandler().getLooper());
@@ -121,7 +132,8 @@ public class ResultCodeTest extends BaseSetup {
             demandLooper.runOneTask();
             Robolectric.flushBackgroundThreadScheduler();
             Robolectric.flushForegroundThreadScheduler();
-            verify(mockListener).onComplete(ResultCode.SUCCESS);
+            verify(mockListener).onComplete(ResultCode.SUCCESS, testRequest, dummyAdView);
+
             Bundle bundle = testRequest.getCustomTargeting();
             assertEquals(10, bundle.size());
             assertTrue(bundle.containsKey("hb_pb"));
@@ -158,14 +170,20 @@ public class ResultCodeTest extends BaseSetup {
 
         HttpUrl httpUrl = server.url("/");
         Host.CUSTOM.setHostUrl(httpUrl.toString());
+
+        Object dummyAdView = new PublisherAdView(activity);
+        AppEventListener appMockListener = new MockAppEventListener();
+        CacheManager.init(activity.getApplicationContext());
+        PrebidMobile.setAppListener(appMockListener);
+
         PrebidMobile.setPrebidServerHost(Host.CUSTOM);
         PrebidMobile.setApplicationContext(activity.getApplicationContext());
         PrebidMobile.setPrebidServerAccountId("123456");
         server.enqueue(new MockResponse().setResponseCode(200).setBody(MockPrebidServerResponses.oneBidFromRubicon()));
-        BannerAdUnit adUnit = new BannerAdUnit("123456", 300, 250);
+        BannerAdUnit adUnit = new BannerAdUnit("dummy", "123456", 300, 250);
         PublisherAdRequest testRequest = new PublisherAdRequest.Builder().build();
         OnCompleteListener mockListener = mock(OnCompleteListener.class);
-        adUnit.fetchDemand(testRequest, mockListener);
+        adUnit.fetchDemand(testRequest, dummyAdView, mockListener);
         DemandFetcher fetcher = (DemandFetcher) FieldUtils.readField(adUnit, "fetcher", true);
         PrebidMobile.timeoutMillis = Integer.MAX_VALUE;
         ShadowLooper fetcherLooper = shadowOf(fetcher.getHandler().getLooper());
@@ -175,7 +193,7 @@ public class ResultCodeTest extends BaseSetup {
         Robolectric.flushBackgroundThreadScheduler();
         Robolectric.flushForegroundThreadScheduler();
 
-        verify(mockListener).onComplete(ResultCode.SUCCESS);
+        verify(mockListener).onComplete(ResultCode.SUCCESS, testRequest, dummyAdView);
 
         Bundle bundle = testRequest.getCustomTargeting();
         assertEquals(16, bundle.size());
@@ -232,17 +250,18 @@ public class ResultCodeTest extends BaseSetup {
 
     @Test
     public void testNetworkError() {
+        Object dummyAdView = new Object();
         PrebidMobile.setPrebidServerHost(Host.APPNEXUS);
         PrebidMobile.setApplicationContext(activity.getApplicationContext());
         PrebidMobile.setPrebidServerAccountId("123456");
         ConnectivityManager connectivityManager = (ConnectivityManager) activity.getSystemService(Context.CONNECTIVITY_SERVICE);
         ShadowNetworkInfo shadowOfActiveNetworkInfo = shadowOf(connectivityManager.getActiveNetworkInfo());
         shadowOfActiveNetworkInfo.setConnectionStatus(false);
-        BannerAdUnit adUnit = new BannerAdUnit("123456", 300, 250);
+        BannerAdUnit adUnit = new BannerAdUnit("dummy", "123456", 300, 250);
         MoPubView testView = new MoPubView(activity);
         OnCompleteListener mockListener = mock(OnCompleteListener.class);
-        adUnit.fetchDemand(testView, mockListener);
-        verify(mockListener).onComplete(ResultCode.NETWORK_ERROR);
+        adUnit.fetchDemand(testView, dummyAdView, mockListener);
+        verify(mockListener).onComplete(ResultCode.NETWORK_ERROR, testView, dummyAdView);
     }
 
     @Test
@@ -253,7 +272,7 @@ public class ResultCodeTest extends BaseSetup {
         PrebidMobile.setShareGeoLocation(true);
         PrebidMobile.setApplicationContext(activity.getApplicationContext());
         DemandAdapter.DemandAdapterListener mockListener = mock(DemandAdapter.DemandAdapterListener.class);
-        PrebidServerAdapter adapter = new PrebidServerAdapter();
+        PrebidServerAdapter adapter = new PrebidServerAdapter(new BannerAdUnit("code", "67890", 320, 50));
         HashSet<AdSize> sizes = new HashSet<>();
         sizes.add(new AdSize(0, 250));
         RequestParams requestParams = new RequestParams("e2edc23f-0b3b-4203-81b5-7cc97132f418", AdType.BANNER, sizes, new ArrayList<String>());
@@ -274,16 +293,17 @@ public class ResultCodeTest extends BaseSetup {
     @Test
     public void testNoBids() throws Exception {
         if (successfulMockServerStarted) {
+            Object dummyAdView = new Object();
             HttpUrl httpUrl = server.url("/");
             Host.CUSTOM.setHostUrl(httpUrl.toString());
             PrebidMobile.setPrebidServerHost(Host.CUSTOM);
             PrebidMobile.setApplicationContext(activity.getApplicationContext());
             PrebidMobile.setPrebidServerAccountId("123456");
             server.enqueue(new MockResponse().setResponseCode(200).setBody(MockPrebidServerResponses.noBid()));
-            BannerAdUnit adUnit = new BannerAdUnit("123456", 300, 250);
+            BannerAdUnit adUnit = new BannerAdUnit("dummy", "123456", 300, 250);
             MoPubView testView = new MoPubView(activity);
             OnCompleteListener mockListener = mock(OnCompleteListener.class);
-            adUnit.fetchDemand(testView, mockListener);
+            adUnit.fetchDemand(testView, dummyAdView, mockListener);
             DemandFetcher fetcher = (DemandFetcher) FieldUtils.readField(adUnit, "fetcher", true);
             PrebidMobile.timeoutMillis = Integer.MAX_VALUE;
             ShadowLooper fetcherLooper = shadowOf(fetcher.getHandler().getLooper());
@@ -292,7 +312,7 @@ public class ResultCodeTest extends BaseSetup {
             demandLooper.runOneTask();
             Robolectric.flushBackgroundThreadScheduler();
             Robolectric.flushForegroundThreadScheduler();
-            verify(mockListener).onComplete(ResultCode.NO_BIDS);
+            verify(mockListener).onComplete(ResultCode.NO_BIDS, testView, dummyAdView);
             assertEquals(null, testView.getKeywords());
         } else {
             assertTrue("Mock server not started", false);
@@ -305,16 +325,17 @@ public class ResultCodeTest extends BaseSetup {
             fail("Mock server not started");
         }
 
+        Object dummyAdView = new PublisherAdView(activity);
         HttpUrl httpUrl = server.url("/");
         Host.CUSTOM.setHostUrl(httpUrl.toString());
         PrebidMobile.setPrebidServerHost(Host.CUSTOM);
         PrebidMobile.setApplicationContext(activity.getApplicationContext());
         PrebidMobile.setPrebidServerAccountId("123456");
         server.enqueue(new MockResponse().setResponseCode(200).setBody(MockPrebidServerResponses.noBidFromRubicon()));
-        BannerAdUnit adUnit = new BannerAdUnit("123456", 300, 250);
+        BannerAdUnit adUnit = new BannerAdUnit("dummy", "123456", 300, 250);
         MoPubView testView = new MoPubView(activity);
         OnCompleteListener mockListener = mock(OnCompleteListener.class);
-        adUnit.fetchDemand(testView, mockListener);
+        adUnit.fetchDemand(testView, dummyAdView, mockListener);
         DemandFetcher fetcher = (DemandFetcher) FieldUtils.readField(adUnit, "fetcher", true);
         PrebidMobile.timeoutMillis = Integer.MAX_VALUE;
         ShadowLooper fetcherLooper = shadowOf(fetcher.getHandler().getLooper());
@@ -323,7 +344,7 @@ public class ResultCodeTest extends BaseSetup {
         demandLooper.runOneTask();
         Robolectric.flushBackgroundThreadScheduler();
         Robolectric.flushForegroundThreadScheduler();
-        verify(mockListener).onComplete(ResultCode.NO_BIDS);
+        verify(mockListener).onComplete(ResultCode.NO_BIDS, testView, dummyAdView);
 
         assertNull(testView.getKeywords());
     }
@@ -331,21 +352,23 @@ public class ResultCodeTest extends BaseSetup {
     @Test
     public void testEmptyAccountId() throws Exception {
         PrebidMobile.setPrebidServerAccountId("");
-        BannerAdUnit adUnit = new BannerAdUnit("123456", 320, 50);
+        Object dummyAdView = new Object();
+        BannerAdUnit adUnit = new BannerAdUnit("dummy", "123456", 320, 50);
         MoPubView testView = new MoPubView(activity);
         OnCompleteListener mockListener = mock(OnCompleteListener.class);
-        adUnit.fetchDemand(testView, mockListener);
-        verify(mockListener).onComplete(ResultCode.INVALID_ACCOUNT_ID);
+        adUnit.fetchDemand(testView, dummyAdView, mockListener);
+        verify(mockListener).onComplete(ResultCode.INVALID_ACCOUNT_ID, testView, dummyAdView);
     }
 
     @Test
     public void testEmptyConfigId() throws Exception {
         PrebidMobile.setPrebidServerAccountId("123456");
-        BannerAdUnit adUnit = new BannerAdUnit("", 320, 50);
+        Object dummyAdView = new Object();
+        BannerAdUnit adUnit = new BannerAdUnit("dummy", "", 320, 50);
         MoPubView testView = new MoPubView(activity);
         OnCompleteListener mockListener = mock(OnCompleteListener.class);
-        adUnit.fetchDemand(testView, mockListener);
-        verify(mockListener).onComplete(ResultCode.INVALID_CONFIG_ID);
+        adUnit.fetchDemand(testView, dummyAdView, mockListener);
+        verify(mockListener).onComplete(ResultCode.INVALID_CONFIG_ID, testView, dummyAdView);
     }
 
     @Test
@@ -353,33 +376,36 @@ public class ResultCodeTest extends BaseSetup {
         PrebidMobile.setPrebidServerAccountId("123456");
         Host.CUSTOM.setHostUrl("");
         PrebidMobile.setPrebidServerHost(Host.CUSTOM);
-        BannerAdUnit adUnit = new BannerAdUnit("123456", 320, 50);
+        BannerAdUnit adUnit = new BannerAdUnit("dummy", "123456", 320, 50);
         MoPubView testView = new MoPubView(activity);
         OnCompleteListener mockListener = mock(OnCompleteListener.class);
-        adUnit.fetchDemand(testView, mockListener);
-        verify(mockListener).onComplete(ResultCode.INVALID_HOST_URL);
+        Object dummyAdView = new Object();
+        adUnit.fetchDemand(testView, dummyAdView, mockListener);
+        verify(mockListener).onComplete(ResultCode.INVALID_HOST_URL, testView, dummyAdView);
     }
 
     @Test
     public void testSupportMultipleSizesForDFPBanner() throws Exception {
         PrebidMobile.setPrebidServerAccountId("123456");
-        BannerAdUnit adUnit = new BannerAdUnit("123456", 320, 50);
+        Object dummyAdView = new Object();
+        BannerAdUnit adUnit = new BannerAdUnit("dummy", "123456", 320, 50);
         adUnit.addAdditionalSize(300, 250);
         OnCompleteListener mockListener = mock(OnCompleteListener.class);
         PublisherAdRequest.Builder builder = new PublisherAdRequest.Builder();
-        adUnit.fetchDemand(builder.build(), mockListener);
-        verify(mockListener, never()).onComplete(ResultCode.INVALID_SIZE);
+        adUnit.fetchDemand(builder.build(), dummyAdView, mockListener);
+        verify(mockListener, never()).onComplete(ResultCode.INVALID_SIZE, adUnit, dummyAdView);
     }
 
     @Test
     public void testNoNegativeSizeForBanner() {
         PrebidMobile.setPrebidServerAccountId("123456");
-        BannerAdUnit adUnit = new BannerAdUnit("123456", 320, 50);
+        Object dummyAdView = new Object();
+        BannerAdUnit adUnit = new BannerAdUnit("dummy", "123456", 320, 50);
         adUnit.addAdditionalSize(-1, 250);
         MoPubView testView = new MoPubView(activity);
         OnCompleteListener mockListener = mock(OnCompleteListener.class);
-        adUnit.fetchDemand(testView, mockListener);
-        verify(mockListener).onComplete(ResultCode.INVALID_SIZE);
+        adUnit.fetchDemand(testView, dummyAdView, mockListener);
+        verify(mockListener).onComplete(ResultCode.INVALID_SIZE, testView, dummyAdView);
     }
 
     @Test
@@ -389,7 +415,7 @@ public class ResultCodeTest extends BaseSetup {
         PrebidMobile.setShareGeoLocation(true);
         PrebidMobile.setApplicationContext(activity.getApplicationContext());
         DemandAdapter.DemandAdapterListener mockListener = mock(DemandAdapter.DemandAdapterListener.class);
-        PrebidServerAdapter adapter = new PrebidServerAdapter();
+        PrebidServerAdapter adapter = new PrebidServerAdapter(new BannerAdUnit("code", "67890", 320, 50));
         HashSet<AdSize> sizes = new HashSet<>();
         sizes.add(new AdSize(0, 250));
         RequestParams requestParams = new RequestParams("e2edc23f-0b3b-4203-81b5-7cc97132f418", AdType.BANNER, sizes, new ArrayList<String>());
@@ -402,11 +428,13 @@ public class ResultCodeTest extends BaseSetup {
 
     @Test
     public void testInvalidAdObject() {
+        Object dummyAdView = new Object();
+        Object dummyAdObj = new Object();
         PrebidMobile.setPrebidServerAccountId("123456");
         PrebidMobile.setApplicationContext(activity.getApplicationContext());
-        BannerAdUnit adUnit = new BannerAdUnit("123456", 300, 250);
+        BannerAdUnit adUnit = new BannerAdUnit("dummy", "123456", 300, 250);
         OnCompleteListener mockListener = mock(OnCompleteListener.class);
-        adUnit.fetchDemand(new Object(), mockListener);
-        verify(mockListener).onComplete(ResultCode.INVALID_AD_OBJECT);
+        adUnit.fetchDemand(dummyAdObj, dummyAdView, mockListener);
+        verify(mockListener).onComplete(ResultCode.INVALID_AD_OBJECT, dummyAdObj, dummyAdView);
     }
 }

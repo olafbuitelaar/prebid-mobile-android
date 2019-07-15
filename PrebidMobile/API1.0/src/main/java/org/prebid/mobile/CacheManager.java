@@ -1,4 +1,4 @@
-package org.prebid.mobile;;
+package org.prebid.mobile;
 
 import android.content.Context;
 import android.os.Handler;
@@ -12,7 +12,7 @@ import android.webkit.WebViewClient;
 import java.util.ArrayList;
 import java.util.List;
 
-class CacheManager {
+public class CacheManager {
 
     private WebView dfpWebCache;
     private boolean isWebContextLoaded = false;

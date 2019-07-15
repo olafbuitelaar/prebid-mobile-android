@@ -28,6 +28,16 @@ import static org.junit.Assert.assertTrue;
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = BaseSetup.testSDK)
 public class PrebidMobileTest extends BaseSetup {
+
+    @Test
+    public void testPrebidMobileAdUnitMapByAdView()
+    {
+        Object adView = new Object();
+        PrebidMobile.mapBidToAdView(adView, "code");
+        AdUnitBidMap adUnitBidMap = PrebidMobile.getAdunitMapByAdView(adView);
+        assertEquals("code", adUnitBidMap.adUnitCode);
+    }
+
     @Test
     public void testPrebidMobileSettings() {
         PrebidMobile.setPrebidServerAccountId("123456");

@@ -18,8 +18,11 @@ package org.prebid.mobile;
 
 
 import android.os.Bundle;
+import android.content.Context;
 
+import com.google.android.gms.ads.doubleclick.AppEventListener;
 import com.google.android.gms.ads.doubleclick.PublisherAdRequest;
+import com.google.android.gms.ads.doubleclick.PublisherAdView;
 import com.mopub.mobileads.MoPubView;
 
 import org.apache.commons.lang3.reflect.FieldUtils;
@@ -28,6 +31,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mockito;
 import org.prebid.mobile.testutils.BaseSetup;
+import org.prebid.mobile.testutils.MockAppEventListener;
 import org.prebid.mobile.testutils.MockPrebidServerResponses;
 import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
@@ -55,9 +59,11 @@ public class DemandFetcherTest extends BaseSetup {
     @Test
     public void testBaseConditions() throws Exception {
         if (successfulMockServerStarted) {
+            Object adView = new Object();
+            PrebidMobile.mapBidToAdView(adView, "code");
             PublisherAdRequest.Builder builder = new PublisherAdRequest.Builder();
             PublisherAdRequest request = builder.build();
-            DemandFetcher demandFetcher = new DemandFetcher(request);
+            DemandFetcher demandFetcher = new DemandFetcher(request, adView);
             demandFetcher.setPeriodMillis(0);
             HashSet<AdSize> sizes = new HashSet<>();
             sizes.add(new AdSize(300, 250));
@@ -81,13 +87,16 @@ public class DemandFetcherTest extends BaseSetup {
     @Test
     public void testSingleRequestNoBidsResponse() throws Exception {
         if (successfulMockServerStarted) {
+            Object adView = new PublisherAdView(activity);
+            PrebidMobile.mapBidToAdView(adView, "code");
+            PrebidMobile.registerAdUnit(new InterstitialAdUnit("configId"));
             HttpUrl httpUrl = server.url("/");
             Host.CUSTOM.setHostUrl(httpUrl.toString());
             PrebidMobile.setPrebidServerHost(Host.CUSTOM);
             server.enqueue(new MockResponse().setResponseCode(200).setBody(MockPrebidServerResponses.noBid()));
             PublisherAdRequest.Builder builder = new PublisherAdRequest.Builder();
             PublisherAdRequest request = builder.build();
-            DemandFetcher demandFetcher = new DemandFetcher(request);
+            DemandFetcher demandFetcher = new DemandFetcher(request, adView);
             PrebidMobile.timeoutMillis = Integer.MAX_VALUE;
             demandFetcher.setPeriodMillis(0);
             HashSet<AdSize> sizes = new HashSet<>();
@@ -106,7 +115,7 @@ public class DemandFetcherTest extends BaseSetup {
             demandLooper.runOneTask();
             Robolectric.flushBackgroundThreadScheduler();
             Robolectric.flushForegroundThreadScheduler();
-            verify(mockListener).onComplete(ResultCode.NO_BIDS);
+            verify(mockListener).onComplete(ResultCode.NO_BIDS, request, adView);
             assertEquals(DemandFetcher.STATE.DESTROYED, FieldUtils.readField(demandFetcher, "state", true));
         } else {
             assertTrue("Mock server was not started", false);
@@ -116,6 +125,9 @@ public class DemandFetcherTest extends BaseSetup {
     @Test
     public void testDestroyAutoRefresh() throws Exception {
         if (successfulMockServerStarted) {
+            Object adView = new PublisherAdView(activity);
+            PrebidMobile.mapBidToAdView(adView, "code");
+            PrebidMobile.registerAdUnit(new InterstitialAdUnit("configId"));
             HttpUrl httpUrl = server.url("/");
             Host.CUSTOM.setHostUrl(httpUrl.toString());
             PrebidMobile.setPrebidServerHost(Host.CUSTOM);
@@ -125,7 +137,7 @@ public class DemandFetcherTest extends BaseSetup {
 
             PublisherAdRequest.Builder builder = new PublisherAdRequest.Builder();
             PublisherAdRequest request = builder.build();
-            DemandFetcher demandFetcher = new DemandFetcher(request);
+            DemandFetcher demandFetcher = new DemandFetcher(request, adView);
             PrebidMobile.timeoutMillis = Integer.MAX_VALUE;
             demandFetcher.setPeriodMillis(30);
             HashSet<AdSize> sizes = new HashSet<>();
@@ -149,7 +161,7 @@ public class DemandFetcherTest extends BaseSetup {
             assertTrue(!Robolectric.getForegroundThreadScheduler().areAnyRunnable());
             assertTrue(!Robolectric.getBackgroundThreadScheduler().areAnyRunnable());
             assertEquals(DemandFetcher.STATE.DESTROYED, FieldUtils.readField(demandFetcher, "state", true));
-            verify(mockListener, Mockito.times(1)).onComplete(ResultCode.NO_BIDS);
+            verify(mockListener, Mockito.times(1)).onComplete(ResultCode.NO_BIDS, request, adView);
         } else {
             assertTrue("Mock server was not started", false);
         }
@@ -158,13 +170,16 @@ public class DemandFetcherTest extends BaseSetup {
     @Test
     public void testSingleRequestOneBidResponseForDFPAdObject() throws Exception {
         if (successfulMockServerStarted) {
+            Object adView = new PublisherAdView(activity);
+            PrebidMobile.mapBidToAdView(adView, "code");
+            PrebidMobile.registerAdUnit(new InterstitialAdUnit("configId"));
             HttpUrl httpUrl = server.url("/");
             Host.CUSTOM.setHostUrl(httpUrl.toString());
             PrebidMobile.setPrebidServerHost(Host.CUSTOM);
             server.enqueue(new MockResponse().setResponseCode(200).setBody(MockPrebidServerResponses.oneBidFromAppNexus()));
             PublisherAdRequest.Builder builder = new PublisherAdRequest.Builder();
             PublisherAdRequest request = builder.build();
-            DemandFetcher demandFetcher = new DemandFetcher(request);
+            DemandFetcher demandFetcher = new DemandFetcher(request, adView);
             PrebidMobile.timeoutMillis = Integer.MAX_VALUE;
             demandFetcher.setPeriodMillis(0);
             HashSet<AdSize> sizes = new HashSet<>();
@@ -183,7 +198,7 @@ public class DemandFetcherTest extends BaseSetup {
             demandLooper.runOneTask();
             Robolectric.flushBackgroundThreadScheduler();
             Robolectric.flushForegroundThreadScheduler();
-            verify(mockListener).onComplete(ResultCode.SUCCESS);
+            verify(mockListener).onComplete(ResultCode.SUCCESS, request, adView);
             assertEquals(DemandFetcher.STATE.DESTROYED, FieldUtils.readField(demandFetcher, "state", true));
             Bundle bundle = request.getCustomTargeting();
             assertEquals(10, bundle.size());
@@ -218,13 +233,16 @@ public class DemandFetcherTest extends BaseSetup {
             fail("Mock server was not started");
         }
 
+        Object adView = new PublisherAdView(activity);
+        PrebidMobile.mapBidToAdView(adView, "code");
+        PrebidMobile.registerAdUnit(new InterstitialAdUnit("configId"));
         HttpUrl httpUrl = server.url("/");
         Host.CUSTOM.setHostUrl(httpUrl.toString());
         PrebidMobile.setPrebidServerHost(Host.CUSTOM);
         server.enqueue(new MockResponse().setResponseCode(200).setBody(MockPrebidServerResponses.oneBidFromRubicon()));
         PublisherAdRequest.Builder builder = new PublisherAdRequest.Builder();
         PublisherAdRequest request = builder.build();
-        DemandFetcher demandFetcher = new DemandFetcher(request);
+        DemandFetcher demandFetcher = new DemandFetcher(request, adView);
         PrebidMobile.timeoutMillis = Integer.MAX_VALUE;
         demandFetcher.setPeriodMillis(0);
         HashSet<AdSize> sizes = new HashSet<>();
@@ -243,7 +261,7 @@ public class DemandFetcherTest extends BaseSetup {
         demandLooper.runOneTask();
         Robolectric.flushBackgroundThreadScheduler();
         Robolectric.flushForegroundThreadScheduler();
-        verify(mockListener).onComplete(ResultCode.SUCCESS);
+        verify(mockListener).onComplete(ResultCode.SUCCESS, request, adView);
         assertEquals(DemandFetcher.STATE.DESTROYED, FieldUtils.readField(demandFetcher, "state", true));
 
         Bundle bundle = request.getCustomTargeting();
@@ -302,13 +320,16 @@ public class DemandFetcherTest extends BaseSetup {
     @Test
     public void testSingleRequestOneBidResponseForMoPubAdObject() throws Exception {
         if (successfulMockServerStarted) {
+            Object _adView = new PublisherAdView(activity);
+            PrebidMobile.mapBidToAdView(_adView, "code");
+            PrebidMobile.registerAdUnit(new InterstitialAdUnit("configId"));
             HttpUrl httpUrl = server.url("/");
             Host.CUSTOM.setHostUrl(httpUrl.toString());
             PrebidMobile.setPrebidServerHost(Host.CUSTOM);
             server.enqueue(new MockResponse().setResponseCode(200).setBody(MockPrebidServerResponses.oneBidFromAppNexus()));
             MoPubView adView = new MoPubView(activity);
             adView.setAdUnitId("123456789");
-            DemandFetcher demandFetcher = new DemandFetcher(adView);
+            DemandFetcher demandFetcher = new DemandFetcher(adView, _adView);
             PrebidMobile.timeoutMillis = Integer.MAX_VALUE;
             demandFetcher.setPeriodMillis(0);
             HashSet<AdSize> sizes = new HashSet<>();
@@ -327,7 +348,7 @@ public class DemandFetcherTest extends BaseSetup {
             demandLooper.runOneTask();
             Robolectric.flushBackgroundThreadScheduler();
             Robolectric.flushForegroundThreadScheduler();
-            verify(mockListener).onComplete(ResultCode.SUCCESS);
+            verify(mockListener).onComplete(ResultCode.SUCCESS, new Object(), _adView);
             assertEquals(DemandFetcher.STATE.DESTROYED, FieldUtils.readField(demandFetcher, "state", true));
             String adViewKeywords = adView.getKeywords();
             assertEquals("hb_pb:0.50,hb_env:mobile-app,hb_pb_appnexus:0.50,hb_size:300x250,hb_bidder_appnexus:appnexus,hb_bidder:appnexus,hb_cache_id:df4aba04-5e69-44b8-8608-058ab21600b8,hb_env_appnexus:mobile-app,hb_size_appnexus:300x250,hb_cache_id_appnexus:df4aba04-5e69-44b8-8608-058ab21600b8,", adViewKeywords);
@@ -342,13 +363,18 @@ public class DemandFetcherTest extends BaseSetup {
             fail("Mock server was not started");
         }
 
+        AppEventListener appMockListener = new MockAppEventListener();
+        PrebidMobile.setAppListener(appMockListener);
+        Object _adView = new PublisherAdView(activity);
+        PrebidMobile.mapBidToAdView(_adView, "code");
+
         HttpUrl httpUrl = server.url("/");
         Host.CUSTOM.setHostUrl(httpUrl.toString());
         PrebidMobile.setPrebidServerHost(Host.CUSTOM);
         server.enqueue(new MockResponse().setResponseCode(200).setBody(MockPrebidServerResponses.oneBidFromRubicon()));
         MoPubView adView = new MoPubView(activity);
         adView.setAdUnitId("123456789");
-        DemandFetcher demandFetcher = new DemandFetcher(adView);
+        DemandFetcher demandFetcher = new DemandFetcher(adView, _adView);
         PrebidMobile.timeoutMillis = Integer.MAX_VALUE;
         demandFetcher.setPeriodMillis(0);
         HashSet<AdSize> sizes = new HashSet<>();
@@ -367,7 +393,7 @@ public class DemandFetcherTest extends BaseSetup {
         demandLooper.runOneTask();
         Robolectric.flushBackgroundThreadScheduler();
         Robolectric.flushForegroundThreadScheduler();
-        verify(mockListener).onComplete(ResultCode.SUCCESS);
+        verify(mockListener).onComplete(ResultCode.SUCCESS, adView, _adView);
         assertEquals(DemandFetcher.STATE.DESTROYED, FieldUtils.readField(demandFetcher, "state", true));
         String adViewKeywords = adView.getKeywords();
         assertEquals("hb_env:mobile-app,hb_cache_hostpath:https://prebid-cache-europe.rubiconproject.com/cache,hb_size_rubicon:300x250,hb_cache_id:a2f41588-4727-425c-9ef0-3b382debef1e,hb_cache_path_rubicon:/cache,hb_cache_host_rubicon:prebid-cache-europe.rubiconproject.com,hb_pb:1.20,hb_pb_rubicon:1.20,hb_cache_id_rubicon:a2f41588-4727-425c-9ef0-3b382debef1e,hb_cache_path:/cache,hb_size:300x250,hb_cache_hostpath_rubicon:https://prebid-cache-europe.rubiconproject.com/cache,hb_env_rubicon:mobile-app,hb_bidder:rubicon,hb_bidder_rubicon:rubicon,hb_cache_host:prebid-cache-europe.rubiconproject.com,", adViewKeywords);
@@ -376,6 +402,8 @@ public class DemandFetcherTest extends BaseSetup {
     @Test
     public void testAutoRefreshForMoPubAdObject() throws Exception {
         if (successfulMockServerStarted) {
+            Object _adView = new PublisherAdView(activity);
+            PrebidMobile.mapBidToAdView(_adView, "code");
             HttpUrl httpUrl = server.url("/");
             Host.CUSTOM.setHostUrl(httpUrl.toString());
             PrebidMobile.setPrebidServerHost(Host.CUSTOM);
@@ -383,7 +411,7 @@ public class DemandFetcherTest extends BaseSetup {
             server.enqueue(new MockResponse().setResponseCode(200).setBody("{}"));
             MoPubView adView = new MoPubView(activity);
             adView.setAdUnitId("123456789");
-            DemandFetcher demandFetcher = new DemandFetcher(adView);
+            DemandFetcher demandFetcher = new DemandFetcher(adView, _adView);
             PrebidMobile.timeoutMillis = Integer.MAX_VALUE;
             demandFetcher.setPeriodMillis(2000);
             HashSet<AdSize> sizes = new HashSet<>();
@@ -402,7 +430,7 @@ public class DemandFetcherTest extends BaseSetup {
             demandLooper.runOneTask();
             Robolectric.flushBackgroundThreadScheduler();
             Robolectric.flushForegroundThreadScheduler();
-            verify(mockListener).onComplete(ResultCode.SUCCESS);
+            verify(mockListener).onComplete(ResultCode.SUCCESS, new Object(), new Object());
             assertNotSame(DemandFetcher.STATE.DESTROYED, FieldUtils.readField(demandFetcher, "state", true));
             String adViewKeywords = adView.getKeywords();
             assertEquals("hb_pb:0.50,hb_env:mobile-app,hb_pb_appnexus:0.50,hb_size:300x250,hb_bidder_appnexus:appnexus,hb_bidder:appnexus,hb_cache_id:df4aba04-5e69-44b8-8608-058ab21600b8,hb_env_appnexus:mobile-app,hb_size_appnexus:300x250,hb_cache_id_appnexus:df4aba04-5e69-44b8-8608-058ab21600b8,", adViewKeywords);
@@ -410,7 +438,7 @@ public class DemandFetcherTest extends BaseSetup {
             demandLooper.runOneTask();
             Robolectric.flushBackgroundThreadScheduler();
             Robolectric.flushForegroundThreadScheduler();
-            verify(mockListener).onComplete(ResultCode.NO_BIDS);
+            verify(mockListener).onComplete(ResultCode.NO_BIDS, new Object(), new Object());
             assertNotSame(DemandFetcher.STATE.DESTROYED, FieldUtils.readField(demandFetcher, "state", true));
             adViewKeywords = adView.getKeywords();
             assertEquals("", adViewKeywords);
@@ -422,6 +450,14 @@ public class DemandFetcherTest extends BaseSetup {
     @Test
     public void testAutoRefreshForDFPAdObject() throws Exception {
         if (successfulMockServerStarted) {
+            Object adView = new PublisherAdView(activity);
+            AppEventListener appMockListener = new MockAppEventListener();
+            PrebidMobile.setAppListener(appMockListener);
+
+            PrebidMobile.mapBidToAdView(adView, "code");
+            PrebidMobile.registerAdUnit(new InterstitialAdUnit("configId"));
+            PrebidMobile.initCacheManager();
+
             HttpUrl httpUrl = server.url("/");
             Host.CUSTOM.setHostUrl(httpUrl.toString());
             PrebidMobile.setPrebidServerHost(Host.CUSTOM);
@@ -429,7 +465,7 @@ public class DemandFetcherTest extends BaseSetup {
             server.enqueue(new MockResponse().setResponseCode(200).setBody("{}"));
             PublisherAdRequest.Builder builder = new PublisherAdRequest.Builder();
             PublisherAdRequest request = builder.build();
-            DemandFetcher demandFetcher = new DemandFetcher(request);
+            DemandFetcher demandFetcher = new DemandFetcher(request, adView);
             PrebidMobile.timeoutMillis = Integer.MAX_VALUE;
             demandFetcher.setPeriodMillis(2000);
             HashSet<AdSize> sizes = new HashSet<>();
@@ -448,7 +484,7 @@ public class DemandFetcherTest extends BaseSetup {
             demandLooper.runOneTask();
             Robolectric.flushBackgroundThreadScheduler();
             Robolectric.flushForegroundThreadScheduler();
-            verify(mockListener).onComplete(ResultCode.SUCCESS);
+            verify(mockListener).onComplete(ResultCode.SUCCESS, request, adView);
             assertEquals(DemandFetcher.STATE.RUNNING, FieldUtils.readField(demandFetcher, "state", true));
             Bundle bundle = request.getCustomTargeting();
             assertEquals(10, bundle.size());
@@ -476,7 +512,7 @@ public class DemandFetcherTest extends BaseSetup {
             demandLooper.runOneTask();
             Robolectric.flushBackgroundThreadScheduler();
             Robolectric.flushForegroundThreadScheduler();
-            verify(mockListener).onComplete(ResultCode.NO_BIDS);
+            verify(mockListener).onComplete(ResultCode.NO_BIDS, request, adView);
             assertEquals(DemandFetcher.STATE.RUNNING, FieldUtils.readField(demandFetcher, "state", true));
             bundle = request.getCustomTargeting();
             assertEquals(0, bundle.size());
