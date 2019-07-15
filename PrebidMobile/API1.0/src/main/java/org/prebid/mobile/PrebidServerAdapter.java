@@ -269,6 +269,13 @@ class PrebidServerAdapter implements DemandAdapter {
             if (jsonObject != null) {
                 LogUtil.d("Getting response for auction " + getAuctionId() + ": " + jsonObject.toString());
                 try {
+
+                    // No bids response when seatbid is not set.
+                    if (!jsonObject.has("seatbid")) {
+                        notifyDemandFailed(ResultCode.NO_BIDS);
+                        return;
+                    }
+
                     JSONArray seatbid = jsonObject.getJSONArray("seatbid");
                     if (seatbid != null) {
                         for (int i = 0; i < seatbid.length(); i++) {
