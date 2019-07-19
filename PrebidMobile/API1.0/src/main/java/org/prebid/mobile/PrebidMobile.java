@@ -46,7 +46,7 @@ public class PrebidMobile {
 
     private static  long lastGatherStats = System.currentTimeMillis();
     private static Set<AdUnit> adUnits = new HashSet<>();
-    private static Map<String, AdUnitBidMap> bidAdunitMap = new HashMap<>();
+    private static Map<String, List<Object>> bidAdunitMap = new HashMap<String, List<Object>>();
     private static List<AdUnitBidMap> historyAdunitMap = new ArrayList<>();
     private static ConcurrentHashMap<String, ArrayList<BidResponse>> bidMap = new ConcurrentHashMap<String, ArrayList<BidResponse>>();
 
@@ -159,12 +159,10 @@ public class PrebidMobile {
     public static void mapBidToAdView(final Object adView, String adUnitCode){
 
 
-        AdUnitBidMap adUnitBidMap = bidAdunitMap.get(adUnitCode);
-        if (adUnitBidMap != null) {
-            historyAdunitMap.add(adUnitBidMap);
-        }
 
         AdUnitBidMap map = new AdUnitBidMap(adView, adUnitCode);
+        //Object listener = Class.forName("com.google.android.gms.ads.doubleclick.AppEventListener").newInstance();
+        //Class<?> listClass = listener.getClass();
 
         try {
             PrebidMobile.bindNativeListener(adView);
@@ -173,8 +171,44 @@ public class PrebidMobile {
         }
 
 
-        bidAdunitMap.put(adUnitCode, map);
+
+        if(!bidAdunitMap.containsKey(adUnitCode)){
+            bidAdunitMap.put(adUnitCode, new ArrayList<Object>());
+            bidAdunitMap.get(adUnitCode).add(map);
+        }else if(!checkIfAdViewExists(bidAdunitMap.get(adUnitCode), adView)){
+            bidAdunitMap.get(adUnitCode).add(map);
+        } else {
+            //If adUnitMap already exists replace to history and switch to new bidmap
+            List<Object> objects = bidAdunitMap.get(adUnitCode);
+            int toRemove = -1;
+            if (objects != null) {
+                for (int i = 0; i < objects.size(); i++) {
+                    AdUnitBidMap adUnitBidMap = (AdUnitBidMap) objects.get(i);
+                    if (adUnitBidMap.adView == adView) {
+                        historyAdunitMap.add(adUnitBidMap);
+                        toRemove = i;
+                    }
+                }
+
+                if (toRemove > -1) {
+                    objects.remove(toRemove);
+                }
+
+                objects.add(map);
+            }
+
+        }
     }
+
+    private static boolean checkIfAdViewExists(List<Object> maps, Object adView){
+        for (Object map: maps) {
+            if(((AdUnitBidMap)map).adView == adView){
+                return true;
+            }
+        }
+        return false;
+    }
+
 
     private static Object callMethodOnObject(Object object, String methodName, Object... params) {
         try {
@@ -305,9 +339,11 @@ public class PrebidMobile {
 
     static AdUnitBidMap getAdunitMapByAdView(Object adView){
 
-        for (AdUnitBidMap adUnitBidMap : PrebidMobile.bidAdunitMap.values()) {
-            if (adUnitBidMap.adView == adView) {
-                return adUnitBidMap;
+        for ( Map.Entry<String, List<Object>> map : PrebidMobile.bidAdunitMap.entrySet()) {
+            for (Object view : map.getValue()) {
+                if(((AdUnitBidMap)view).adView == adView){
+                    return (AdUnitBidMap) view;
+                }
             }
         }
         return  null;
@@ -391,12 +427,16 @@ public class PrebidMobile {
 
     private  static JSONArray gatherPlacements() throws JSONException{
         JSONArray placementDict = new JSONArray();
-        for (AdUnitBidMap placement : bidAdunitMap.values()) {
-            if (!placement.isServerUpdated) {
-                placementDict.put(gatherSizes(placement));
+        for ( Map.Entry<String, List<Object>> map : bidAdunitMap.entrySet()) {
+            for (Object placementObj : map.getValue()) {
+                AdUnitBidMap placement = (AdUnitBidMap) placementObj;
+                if (!placement.isServerUpdated) {
+                    placementDict.put(gatherSizes(placement));
+                }
+                placement.isServerUpdated = true;
             }
-            placement.isServerUpdated = true;
         }
+
         for (AdUnitBidMap placement: historyAdunitMap) {
             if (!placement.isServerUpdated) {
                 placementDict.put(gatherSizes(placement));
