@@ -32,14 +32,14 @@ import static junit.framework.Assert.assertEquals;
 public class InterstItialAdUnitTest {
     @Test
     public void testInterstitialAdUnitCreation() throws Exception {
-        InterstitialAdUnit adUnit = new InterstitialAdUnit("12345");
+        InterstitialAdUnit adUnit = new InterstitialAdUnit("code", "12345");
         assertEquals("12345", FieldUtils.readField(adUnit, "configId", true));
         assertEquals(AdType.INTERSTITIAL, FieldUtils.readField(adUnit, "adType", true));
     }
 
     @Test
     public void testSetUserKeyword() throws Exception {
-        InterstitialAdUnit adUnit = new InterstitialAdUnit("12345");
+        InterstitialAdUnit adUnit = new InterstitialAdUnit("code", "12345");
         adUnit.addUserKeyword("key", "value");
         adUnit.addUserKeyword("key1", null);
         @SuppressWarnings("unchecked")
@@ -61,7 +61,7 @@ public class InterstItialAdUnitTest {
 
     @Test
     public void testSetUserKeywords() throws Exception {
-        InterstitialAdUnit adUnit = new InterstitialAdUnit("123456");
+        InterstitialAdUnit adUnit = new InterstitialAdUnit("code", "123456");
         adUnit.addUserKeyword("key1", "value1");
         String[] values = {"value1", "value2"};
         adUnit.addUserKeywords("key2", values);

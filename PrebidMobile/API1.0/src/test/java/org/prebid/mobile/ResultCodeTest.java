@@ -67,7 +67,7 @@ public class ResultCodeTest extends BaseSetup {
             PrebidMobile.setPrebidServerAccountId("123456");
             PrebidMobile.setApplicationContext(null);
             server.enqueue(new MockResponse().setResponseCode(200).setBody(MockPrebidServerResponses.oneBidFromAppNexus()));
-            InterstitialAdUnit adUnit = new InterstitialAdUnit("123456");
+            InterstitialAdUnit adUnit = new InterstitialAdUnit("code", "123456");
             MoPubView testView = new MoPubView(activity);
             OnCompleteListener mockListener = mock(OnCompleteListener.class);
             adUnit.fetchDemand(testView, dummyAdView, mockListener);
@@ -173,7 +173,6 @@ public class ResultCodeTest extends BaseSetup {
 
         Object dummyAdView = new PublisherAdView(activity);
         AppEventListener appMockListener = new MockAppEventListener();
-        CacheManager.init(activity.getApplicationContext());
         PrebidMobile.setAppListener(appMockListener);
 
         PrebidMobile.setPrebidServerHost(Host.CUSTOM);

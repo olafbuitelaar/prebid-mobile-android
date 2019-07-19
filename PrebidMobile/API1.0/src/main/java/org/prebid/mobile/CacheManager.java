@@ -5,6 +5,8 @@ import android.os.Handler;
 import android.os.Looper;
 import android.text.TextUtils;
 import android.util.Log;
+import android.webkit.ConsoleMessage;
+import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -12,20 +14,21 @@ import android.webkit.WebViewClient;
 import java.util.ArrayList;
 import java.util.List;
 
-public class CacheManager {
+class CacheManager {
 
     private WebView dfpWebCache;
     private boolean isWebContextLoaded = false;
     private CacheManagerJavascriptInterface cacheManagerJavascriptInterface;
     private List<CompletionListener> completionListeners = new ArrayList<>();
     private static CacheManager cache;
+    private Handler handler;
 
     private static final int REMOVE_CACHE_INTERVAL = 500;
 
 
 
     private CacheManager(Context context) {
-        Handler handler = new Handler(Looper.getMainLooper());
+        handler = new Handler(Looper.getMainLooper());
         initializeContext(handler, context);
     }
 
@@ -53,7 +56,6 @@ public class CacheManager {
             return;
         }
 
-
         List<String> jsObjects = new ArrayList<>();
         for (BidResponse bidResponse : bidResponses) {
             //String escapedBid = StringUtils.escapeEcmaScript(bidResponse.toString());
@@ -78,7 +80,7 @@ public class CacheManager {
                 "";
 
         cacheManagerJavascriptInterface.setListener(cacheListener);
-        dfpWebCache.loadUrl("javascript: " + jsScript + ";");
+        dfpWebCache.loadUrl("javascript: " + jsScript);
     }
 
 
@@ -127,6 +129,14 @@ public class CacheManager {
         }, CacheManager.REMOVE_CACHE_INTERVAL);
     }
 
+    Handler getHandler()  {
+        return handler;
+    }
+
+    WebView getWebView() {
+        return dfpWebCache;
+    }
+
     private void initializeContext(final Handler handler, final Context context) {
 
         handler.post(new Runnable() {
@@ -162,12 +172,10 @@ public class CacheManager {
                         }
 
                         completionListeners = new ArrayList<>();
-
-
                     }
                 });
-                dfpWebCache.loadDataWithBaseURL("https://pubads.g.doubleclick.net", "<html></html>", "text/html", null, null);
 
+                dfpWebCache.loadDataWithBaseURL("https://pubads.g.doubleclick.net", "<html></html>", "text/html", null, null);
             }
         });
 

@@ -89,7 +89,7 @@ public class DemandFetcherTest extends BaseSetup {
         if (successfulMockServerStarted) {
             Object adView = new PublisherAdView(activity);
             PrebidMobile.mapBidToAdView(adView, "code");
-            PrebidMobile.registerAdUnit(new InterstitialAdUnit("configId"));
+            PrebidMobile.registerAdUnit(new InterstitialAdUnit("code", "configId"));
             HttpUrl httpUrl = server.url("/");
             Host.CUSTOM.setHostUrl(httpUrl.toString());
             PrebidMobile.setPrebidServerHost(Host.CUSTOM);
@@ -127,7 +127,7 @@ public class DemandFetcherTest extends BaseSetup {
         if (successfulMockServerStarted) {
             Object adView = new PublisherAdView(activity);
             PrebidMobile.mapBidToAdView(adView, "code");
-            PrebidMobile.registerAdUnit(new InterstitialAdUnit("configId"));
+            PrebidMobile.registerAdUnit(new InterstitialAdUnit("code", "configId"));
             HttpUrl httpUrl = server.url("/");
             Host.CUSTOM.setHostUrl(httpUrl.toString());
             PrebidMobile.setPrebidServerHost(Host.CUSTOM);
@@ -172,7 +172,7 @@ public class DemandFetcherTest extends BaseSetup {
         if (successfulMockServerStarted) {
             Object adView = new PublisherAdView(activity);
             PrebidMobile.mapBidToAdView(adView, "code");
-            PrebidMobile.registerAdUnit(new InterstitialAdUnit("configId"));
+            PrebidMobile.registerAdUnit(new InterstitialAdUnit("code", "configId"));
             HttpUrl httpUrl = server.url("/");
             Host.CUSTOM.setHostUrl(httpUrl.toString());
             PrebidMobile.setPrebidServerHost(Host.CUSTOM);
@@ -235,7 +235,7 @@ public class DemandFetcherTest extends BaseSetup {
 
         Object adView = new PublisherAdView(activity);
         PrebidMobile.mapBidToAdView(adView, "code");
-        PrebidMobile.registerAdUnit(new InterstitialAdUnit("configId"));
+        PrebidMobile.registerAdUnit(new InterstitialAdUnit("code", "configId"));
         HttpUrl httpUrl = server.url("/");
         Host.CUSTOM.setHostUrl(httpUrl.toString());
         PrebidMobile.setPrebidServerHost(Host.CUSTOM);
@@ -322,7 +322,7 @@ public class DemandFetcherTest extends BaseSetup {
         if (successfulMockServerStarted) {
             Object _adView = new PublisherAdView(activity);
             PrebidMobile.mapBidToAdView(_adView, "code");
-            PrebidMobile.registerAdUnit(new InterstitialAdUnit("configId"));
+            PrebidMobile.registerAdUnit(new InterstitialAdUnit("code", "configId"));
             HttpUrl httpUrl = server.url("/");
             Host.CUSTOM.setHostUrl(httpUrl.toString());
             PrebidMobile.setPrebidServerHost(Host.CUSTOM);
@@ -455,8 +455,7 @@ public class DemandFetcherTest extends BaseSetup {
             PrebidMobile.setAppListener(appMockListener);
 
             PrebidMobile.mapBidToAdView(adView, "code");
-            PrebidMobile.registerAdUnit(new InterstitialAdUnit("configId"));
-            PrebidMobile.initCacheManager();
+            PrebidMobile.registerAdUnit(new InterstitialAdUnit("code", "configId"));
 
             HttpUrl httpUrl = server.url("/");
             Host.CUSTOM.setHostUrl(httpUrl.toString());

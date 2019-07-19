@@ -20,10 +20,10 @@ import android.app.Activity;
 
 import org.junit.After;
 import org.junit.Before;
+import org.prebid.mobile.PrebidMobile;
 import org.robolectric.Robolectric;
 import org.robolectric.shadows.httpclient.FakeHttp;
 import org.robolectric.util.Scheduler;
-import org.prebid.mobile.CacheManager;
 
 import java.io.IOException;
 
@@ -61,9 +61,6 @@ public class BaseSetup {
         Robolectric.flushForegroundThreadScheduler();
         bgScheduler.pause();
         uiScheduler.pause();
-
-        // Setup the CacheManager
-        CacheManager.init(activity.getApplicationContext());
     }
 
     @After

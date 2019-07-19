@@ -52,6 +52,7 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.SocketTimeoutException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -105,6 +106,8 @@ class PrebidServerAdapter implements DemandAdapter {
         private DemandAdapterListener listener;
         private boolean timeoutFired;
 
+        private volatile boolean finished = false;
+
         private HashMap<String, String> keywords = new HashMap<>();
         private boolean containTopBid = false;
 
@@ -156,10 +159,12 @@ class PrebidServerAdapter implements DemandAdapter {
                 int httpResult = conn.getResponseCode();
                 LogUtil.d("httpresult is " + httpResult);
                 long demandFetchEndTime = System.currentTimeMillis();
+
+                finished = true;
                 if (httpResult == HttpURLConnection.HTTP_OK) {
                     StringBuilder builder = new StringBuilder();
                     InputStream is = conn.getInputStream();
-                    BufferedReader reader = new BufferedReader(new InputStreamReader(is, "utf-8"));
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
                     String line;
                     while ((line = reader.readLine()) != null) {
                         builder.append(line);
@@ -183,6 +188,7 @@ class PrebidServerAdapter implements DemandAdapter {
                             PrebidMobile.timeoutMillisUpdated = true;
                         }
                     }
+
                     return new AsyncTaskResult<>(response);
                 } else if (httpResult == HttpURLConnection.HTTP_BAD_REQUEST) {
                     StringBuilder builder = new StringBuilder();
@@ -327,15 +333,9 @@ class PrebidServerAdapter implements DemandAdapter {
                                     bidResponse.setResponseTime(responseTime);
                                     bidResponses.add(bidResponse);
 
-
                                 }
-
                             }
-
-
-
                         }
-
 
                         HashMap<String, String> winnerKeywords = BidResponse.getWinnerKeywords(bidResponses);
                         keywords.putAll(winnerKeywords);
@@ -348,25 +348,18 @@ class PrebidServerAdapter implements DemandAdapter {
 
             }
 
-
             if (!keywords.isEmpty() && containTopBid) {
-
-
                 CacheManager.getCacheManager().saveBidResponses(bidResponses, new CacheManager.CacheListener() {
                     @Override
                     public void cacheSaved() {
-
                         new Handler(Looper.getMainLooper()).post(new Runnable() {
                             @Override
                             public void run() {
                                 notifyDemandReady(keywords);
                             }
                         });
-
                     }
                 });
-
-
             } else {
                 notifyDemandFailed(ResultCode.NO_BIDS);
             }
@@ -380,7 +373,7 @@ class PrebidServerAdapter implements DemandAdapter {
             super.onCancelled();
 
             LogUtil.d("onCancelled fired");
-            if (timeoutFired) {
+            if (timeoutFired && !finished) {
                 notifyDemandFailed(ResultCode.TIMEOUT);
             } else {
                 timeoutCountDownTimer.cancel();
@@ -389,6 +382,8 @@ class PrebidServerAdapter implements DemandAdapter {
         }
 
         private void removeThisTask() {
+            finished = true;
+
             @Nullable
             PrebidServerAdapter prebidServerAdapter = this.prebidServerAdapter.get();
             if (prebidServerAdapter == null) {
@@ -899,7 +894,7 @@ class PrebidServerAdapter implements DemandAdapter {
             @Override
             public void onFinish() {
 
-                if (ServerConnector.this.isCancelled()) {
+                if (ServerConnector.this.isCancelled() || ServerConnector.this.finished) {
                     return;
                 }
 
