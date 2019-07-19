@@ -12,7 +12,7 @@ import android.webkit.WebViewClient;
 import java.util.ArrayList;
 import java.util.List;
 
-class CacheManager {
+public class CacheManager {
 
     private WebView dfpWebCache;
     private boolean isWebContextLoaded = false;
@@ -20,7 +20,7 @@ class CacheManager {
     private List<CompletionListener> completionListeners = new ArrayList<>();
     private static CacheManager cache;
 
-    private static final int REMOVE_CACHE_INTERVAL = 500;
+    private static final int REMOVE_CACHE_INTERVAL = 27000;
 
 
 

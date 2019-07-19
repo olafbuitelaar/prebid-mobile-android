@@ -9,6 +9,8 @@ public class AdUnitBidMap
     public boolean isServerUpdated = false;
     public AdUnitBidData data;
 
+    public long loadTime;
+
     public AdUnitBidMap(Object adView, String adUnitCode){
         this.adView = adView;
         this.adUnitCode = adUnitCode;
