@@ -46,7 +46,8 @@ public class PrebidMobile {
 
     private static  long lastGatherStats = System.currentTimeMillis();
     private static Set<AdUnit> adUnits = new HashSet<>();
-    private static Map<String, List<Object>> bidAdunitMap = new HashMap<String, List<Object>>();
+    private static Map<String, AdUnitBidMap> bidAdunitMap = new HashMap<>();
+    private static List<AdUnitBidMap> historyAdunitMap = new ArrayList<>();
     private static ConcurrentHashMap<String, ArrayList<BidResponse>> bidMap = new ConcurrentHashMap<String, ArrayList<BidResponse>>();
 
     public static final int TIMEOUT_MILLIS = 2_000;
@@ -111,7 +112,7 @@ public class PrebidMobile {
         if(bidMap.containsKey(adUnitCode)){
             return bidMap.get(adUnitCode);
         }
-        return new ArrayList<BidResponse>();
+        return new ArrayList<>();
         //return  null;
     }
 
@@ -157,11 +158,13 @@ public class PrebidMobile {
 
     public static void mapBidToAdView(final Object adView, String adUnitCode){
 
-        bidAdunitMap.remove(adUnitCode);
+
+        AdUnitBidMap adUnitBidMap = bidAdunitMap.get(adUnitCode);
+        if (adUnitBidMap != null) {
+            historyAdunitMap.add(adUnitBidMap);
+        }
 
         AdUnitBidMap map = new AdUnitBidMap(adView, adUnitCode);
-        //Object listener = Class.forName("com.google.android.gms.ads.doubleclick.AppEventListener").newInstance();
-        //Class<?> listClass = listener.getClass();
 
         try {
             PrebidMobile.bindNativeListener(adView);
@@ -170,13 +173,7 @@ public class PrebidMobile {
         }
 
 
-
-        if(!bidAdunitMap.containsKey(adUnitCode)){
-            bidAdunitMap.put(adUnitCode, new ArrayList<Object>());
-            bidAdunitMap.get(adUnitCode).add(map);
-        }else if(!checkIfAdViewExists(bidAdunitMap.get(adUnitCode), adView)){
-            bidAdunitMap.get(adUnitCode).add(map);
-        }
+        bidAdunitMap.put(adUnitCode, map);
     }
 
     private static Object callMethodOnObject(Object object, String methodName, Object... params) {
@@ -273,7 +270,6 @@ public class PrebidMobile {
                 url = "http://192.168.0.45/log/";
                 break;
 
-
         }
         int retryCnt = 0;
         try{
@@ -290,7 +286,7 @@ public class PrebidMobile {
         adunitmap.isServerUpdated = false;
         AdUnit adUnit = getAdUnitByCode(adunitmap.adUnitCode);
         adUnit.stopLoadTime = System.currentTimeMillis();
-
+        adunitmap.loadTime = adUnit.getTimeToLoad();
     }
 
     public static void adUnitReceivedDefault(Object adView) {
@@ -308,11 +304,10 @@ public class PrebidMobile {
     }
 
     static AdUnitBidMap getAdunitMapByAdView(Object adView){
-        for ( Map.Entry<String, List<Object>> map : PrebidMobile.bidAdunitMap.entrySet()) {
-            for (Object view : map.getValue()) {
-                if(((AdUnitBidMap)view).adView == adView){
-                    return (AdUnitBidMap) view;
-                }
+
+        for (AdUnitBidMap adUnitBidMap : PrebidMobile.bidAdunitMap.values()) {
+            if (adUnitBidMap.adView == adView) {
+                return adUnitBidMap;
             }
         }
         return  null;
@@ -336,14 +331,12 @@ public class PrebidMobile {
         JSONObject deliveryDict = new JSONObject();
 
 
-        AdUnit adunit = getAdUnitByCode(placement.adUnitCode);
-
 
         sizeDict.put("id", 0);
         sizeDict.put("isDefault", placement.isDefault);
         sizeDict.put("viaAdserver", true);
         sizeDict.put("active", true);
-        sizeDict.put("timeToLoad", adunit.getTimeToLoad());
+        sizeDict.put("timeToLoad", placement.loadTime);
 
         String adunitId = (String) callMethodOnObject(placement.adView, "getAdUnitId");
         adunitId = adunitId.replaceFirst("^/","");
@@ -398,16 +391,19 @@ public class PrebidMobile {
 
     private  static JSONArray gatherPlacements() throws JSONException{
         JSONArray placementDict = new JSONArray();
-        int cnt = 0;
-        for ( Map.Entry<String, List<Object>> map : bidAdunitMap.entrySet()) {
-            for (Object placementObj : map.getValue()) {
-                AdUnitBidMap placement = (AdUnitBidMap) placementObj;
-                if (!placement.isServerUpdated) {
-                    placementDict.put(gatherSizes(placement));
-                }
-                placement.isServerUpdated = true;
+        for (AdUnitBidMap placement : bidAdunitMap.values()) {
+            if (!placement.isServerUpdated) {
+                placementDict.put(gatherSizes(placement));
             }
+            placement.isServerUpdated = true;
         }
+        for (AdUnitBidMap placement: historyAdunitMap) {
+            if (!placement.isServerUpdated) {
+                placementDict.put(gatherSizes(placement));
+            }
+            placement.isServerUpdated = true;
+        }
+        historyAdunitMap = new ArrayList<>();
         return placementDict;
     }
 
@@ -435,10 +431,6 @@ public class PrebidMobile {
                 w.getDefaultDisplay().getSize(size);
                 Measuredwidth = size.x;
                 Measuredheight = size.y;
-
-
-
-
             }else{
                 Display d = w.getDefaultDisplay();
                 Measuredwidth = d.getWidth();

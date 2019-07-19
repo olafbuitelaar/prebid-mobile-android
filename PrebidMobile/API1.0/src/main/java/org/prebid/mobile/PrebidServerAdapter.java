@@ -123,7 +123,6 @@ class PrebidServerAdapter implements DemandAdapter {
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
-
             timeoutCountDownTimer.start();
         }
 
@@ -132,6 +131,7 @@ class PrebidServerAdapter implements DemandAdapter {
         protected AsyncTaskResult<JSONObject> doInBackground(Object... objects) {
             try {
                 long demandFetchStartTime = System.currentTimeMillis();
+                LogUtil.d("doInBackground started at: " + demandFetchStartTime);
                 URL url = new URL(getHost());
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 conn.setDoOutput(true);
@@ -147,7 +147,7 @@ class PrebidServerAdapter implements DemandAdapter {
                 conn.setConnectTimeout(PrebidMobile.timeoutMillis);
                 JSONObject postData = getPostData();
                 LogUtil.d("Before sending request for auction " + auctionId + " to url "  + getHost() + " with post data: " + postData.toString());
-                OutputStreamWriter wr = new OutputStreamWriter(conn.getOutputStream(), "UTF-8");
+                OutputStreamWriter wr = new OutputStreamWriter(conn.getOutputStream(), StandardCharsets.UTF_8);
                 LogUtil.d("Sending request for auction " + auctionId + " with post data: " + postData.toString());
                 wr.write(postData.toString());
                 wr.flush();
@@ -159,6 +159,9 @@ class PrebidServerAdapter implements DemandAdapter {
                 int httpResult = conn.getResponseCode();
                 LogUtil.d("httpresult is " + httpResult);
                 long demandFetchEndTime = System.currentTimeMillis();
+                LogUtil.d("doInBackground ended at: " + demandFetchEndTime);
+                long responseTime = (demandFetchEndTime - demandFetchStartTime);
+                LogUtil.d("request took: " + responseTime);
 
                 finished = true;
                 if (httpResult == HttpURLConnection.HTTP_OK) {
@@ -188,6 +191,11 @@ class PrebidServerAdapter implements DemandAdapter {
                             PrebidMobile.timeoutMillisUpdated = true;
                         }
                     }
+
+                    response.put("response_ready", demandFetchEndTime);
+                    response.put("response_time", responseTime);
+                    response.put("response_started", demandFetchStartTime);
+
 
                     return new AsyncTaskResult<>(response);
                 } else if (httpResult == HttpURLConnection.HTTP_BAD_REQUEST) {
@@ -244,16 +252,12 @@ class PrebidServerAdapter implements DemandAdapter {
         protected void onPostExecute(AsyncTaskResult<JSONObject> asyncTaskResult) {
             super.onPostExecute(asyncTaskResult);
 
-            timeoutCountDownTimer.cancel();
-
             if (asyncTaskResult.getError() != null) {
                 asyncTaskResult.getError().printStackTrace();
-
                 removeThisTask();
                 return;
             } else if (asyncTaskResult.getResultCode() != null) {
                 notifyDemandFailed(asyncTaskResult.getResultCode());
-
                 removeThisTask();
                 return;
             }

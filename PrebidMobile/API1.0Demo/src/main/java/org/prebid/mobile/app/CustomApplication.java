@@ -45,7 +45,7 @@ public class CustomApplication extends Application {
                 .withNetworksToInit(networksToInit)
                 .build();
         MoPub.initializeSdk(this, sdkConfiguration, null);
-        PrebidMobile.setPrebidServerAccountId("0");
+        PrebidMobile.setPrebidServerAccountId("dpg-pzc-i");
         PrebidMobile.setPrebidServerHost(Host.ADSOLUTIONS);
         PrebidMobile.setAppName("prebidmobile-demo");
         PrebidMobile.setShareGeoLocation(true);

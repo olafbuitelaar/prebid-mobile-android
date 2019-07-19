@@ -201,6 +201,8 @@ class DemandFetcher {
                             }
                         }
                     }, auctionId);
+
+
                 }
             });
             if (periodMillis > 0) {

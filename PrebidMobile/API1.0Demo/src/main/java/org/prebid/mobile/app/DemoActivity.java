@@ -319,6 +319,22 @@ public class DemoActivity extends AppCompatActivity {
         PrebidMobile.setAppListener(new LineItemDataReader());
 
         loadAdView();
+
+        refreshButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                loadAdView();
+            }
+        });
+
+        gatherStatsButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                PrebidMobile.gatherStats();
+            }
+        });
+
+
     }
 
     void loadAdView() {
