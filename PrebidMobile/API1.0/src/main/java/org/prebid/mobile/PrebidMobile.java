@@ -52,8 +52,16 @@ public class PrebidMobile {
 
     public static final int TIMEOUT_MILLIS = 2_000;
 
-    static int timeoutMillis = TIMEOUT_MILLIS; // by default use 2000 milliseconds as timeout
+    private static int timeoutMillis = TIMEOUT_MILLIS; // by default use 2000 milliseconds as timeout
     static boolean timeoutMillisUpdated = false;
+
+    public static int getTimeoutMillis() {
+        return timeoutMillis;
+    }
+
+    public static void setTimeoutMillis(int timeoutMillis) {
+        PrebidMobile.timeoutMillis = timeoutMillis;
+    }
 
     private PrebidMobile() {
     }
