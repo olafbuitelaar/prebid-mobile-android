@@ -24,13 +24,13 @@ public class InterstitialAdUnit extends AdUnit {
     @Nullable
     private AdSize minSizePerc = null;
 
-    public InterstitialAdUnit(@NonNull String configId) {
-        super(configId, AdType.INTERSTITIAL);
+    public InterstitialAdUnit(@NonNull String code, @NonNull String configId) {
+        super(code, configId, AdType.INTERSTITIAL);
     }
 
-    public InterstitialAdUnit(@NonNull String configId, int minWidthPerc, int minHeightPerc) {
+    public InterstitialAdUnit(@NonNull String code, @NonNull String configId, int minWidthPerc, int minHeightPerc) {
 
-        this(configId);
+        this(code, configId);
         minSizePerc = new AdSize(minWidthPerc, minHeightPerc);
     }
 
