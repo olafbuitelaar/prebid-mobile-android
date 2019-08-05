@@ -260,15 +260,6 @@ public class PrebidMobile {
         return null;
     }
 
-    private static boolean checkIfAdViewExists(List<Object> maps, Object adView){
-        for (Object map: maps) {
-            if(((AdUnitBidMap)map).adView == adView){
-                return true;
-            }
-        }
-        return false;
-    }
-
     public static void setPrebidServerHost(Host host) {
         PrebidMobile.host = host;
         timeoutMillisUpdated = false; // each time a developer sets a new Host for the SDK, we should re-calculate the time out millis

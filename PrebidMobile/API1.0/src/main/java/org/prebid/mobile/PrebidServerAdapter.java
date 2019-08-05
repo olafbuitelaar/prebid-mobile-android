@@ -147,7 +147,6 @@ class PrebidServerAdapter implements DemandAdapter {
                 conn.setConnectTimeout(PrebidMobile.getTimeoutMillis());
 
                 // Add post data
-                OutputStreamWriter wr = new OutputStreamWriter(conn.getOutputStream(), "UTF-8");
                 JSONObject postData = getPostData();
                 LogUtil.d("Before sending request for auction " + auctionId + " to url "  + getHost() + " with post data: " + postData.toString());
                 OutputStreamWriter wr = new OutputStreamWriter(conn.getOutputStream(), StandardCharsets.UTF_8);
