@@ -71,6 +71,10 @@ public class DemoActivity extends AppCompatActivity {
         refreshCount = 0;
         setContentView(R.layout.activity_demo);
         Intent intent = getIntent();
+
+        refreshButton = findViewById(R.id.refresh_button);
+        gatherStatsButton = findViewById(R.id.gather_stats_button);
+
         if ("DFP".equals(intent.getStringExtra(Constants.AD_SERVER_NAME)) && "Banner".equals(intent.getStringExtra(Constants.AD_TYPE_NAME))) {
             createDFPBanner(intent.getStringExtra(Constants.AD_SIZE_NAME));
         } else if ("DFP".equals(intent.getStringExtra(Constants.AD_SERVER_NAME)) && "Interstitial".equals(intent.getStringExtra(Constants.AD_TYPE_NAME))) {
@@ -84,9 +88,6 @@ public class DemoActivity extends AppCompatActivity {
         } else if("AdSolutions".equals(intent.getStringExtra(Constants.AD_SERVER_NAME)) && "Interstitial".equals(intent.getStringExtra(Constants.AD_TYPE_NAME))) {
 
         }
-
-        refreshButton = findViewById(R.id.refresh_button);
-        gatherStatsButton = findViewById(R.id.gather_stats_button);
 
         refreshButton.setOnClickListener(new View.OnClickListener() {
             @Override
