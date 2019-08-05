@@ -11,7 +11,7 @@
         android:layout_centerInParent="true"
         android:layout_height="wrap_content">
 
-        <FrameLayout
+        <LinearLayout
             android:id="@+id/adFrame"
             android:orientation="vertical"
             android:layout_width="match_parent"

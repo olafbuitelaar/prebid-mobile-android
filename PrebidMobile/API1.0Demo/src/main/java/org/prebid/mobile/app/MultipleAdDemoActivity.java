@@ -57,16 +57,11 @@ public class MultipleAdDemoActivity extends AppCompatActivity {
         refreshButton = findViewById(R.id.refresh_button);
         gatherStatsButton = findViewById(R.id.gather_stats_button);
 
-
-
-
         LinearLayout adFrame = findViewById(R.id.adFrame);
         adFrame.removeAllViews();
 
         adUnitOne = new BannerAdUnit("banner1","test-imp-id", 320, 50);
         adUnitTwo = new BannerAdUnit("banner2","test-imp-id", 320, 50);
-
-
 
         dfpAdViewOne = createDFPView();
         dfpAdViewTwo = createDFPView();
@@ -76,8 +71,6 @@ public class MultipleAdDemoActivity extends AppCompatActivity {
 
         PrebidMobile.setAppPage("multipleAdDemoActivity");
         PrebidMobile.setAppListener(new LineItemDataReader());
-
-
 
         refreshButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -94,13 +87,9 @@ public class MultipleAdDemoActivity extends AppCompatActivity {
             }
         });
 
-
         loadAdView(dfpAdViewOne, adUnitOne);
         loadAdView(dfpAdViewTwo, adUnitTwo);
     }
-
-
-
 
     PublisherAdView createDFPView() {
         final PublisherAdView dfpAdView = new PublisherAdView(this);
@@ -135,7 +124,6 @@ public class MultipleAdDemoActivity extends AppCompatActivity {
         return dfpAdView;
     }
 
-
     void loadAdView(PublisherAdView dfpAdView, AdUnit adUnit) {
         PublisherAdRequest.Builder builder = new PublisherAdRequest.Builder();
         PublisherAdRequest request = builder.build();
@@ -148,10 +136,5 @@ public class MultipleAdDemoActivity extends AppCompatActivity {
                 publisherAdView.loadAd(publisherAdRequest);
             }
         });
-
-
     }
-
-
-
 }

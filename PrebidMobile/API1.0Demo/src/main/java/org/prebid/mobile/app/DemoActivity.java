@@ -313,7 +313,7 @@ public class DemoActivity extends AppCompatActivity {
             }
         };
 
-        FrameLayout adFrame = findViewById(R.id.adFrame);
+        LinearLayout adFrame = findViewById(R.id.adFrame);
         adFrame.removeAllViews();
         adUnit = new BannerAdUnit("banner1","test-imp-id", width, height);
 
