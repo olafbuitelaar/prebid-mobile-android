@@ -512,7 +512,7 @@ class PrebidServerAdapter implements DemandAdapter {
             }
             JSONObject postData = new JSONObject();
             try {
-                postData.put("test", 1);
+                //postData.put("test", 1);
                 String id = UUID.randomUUID().toString();
                 postData.put("id", id);
                 JSONObject source = new JSONObject();
@@ -562,7 +562,6 @@ class PrebidServerAdapter implements DemandAdapter {
                 cache.put("bids", bids);
                 prebid.put("cache", cache);
                 JSONObject storedRequest = new JSONObject();
-                storedRequest.put("id", PrebidMobile.getPrebidServerAccountId());
                 prebid.put("storedrequest", storedRequest);
                 JSONObject targetingEmpty = new JSONObject();
                 prebid.put("targeting", targetingEmpty);
